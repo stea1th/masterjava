@@ -1,0 +1,342 @@
+Index: src/main/java/ru/javaops/masterjava/xml/util/JaxbMarshaller.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/JaxbMarshaller.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/util/JaxbMarshaller.java	(revision )
+@@ -0,0 +1,39 @@
++package ru.javaops.masterjava.xml.util;
++
++import javax.xml.bind.JAXBContext;
++import javax.xml.bind.JAXBException;
++import javax.xml.bind.Marshaller;
++import javax.xml.bind.PropertyException;
++import javax.xml.validation.Schema;
++import java.io.StringWriter;
++import java.io.Writer;
++
++public class JaxbMarshaller {
++    private Marshaller marshaller;
++
++    public JaxbMarshaller(JAXBContext ctx) throws JAXBException {
++        marshaller = ctx.createMarshaller();
++        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
++        marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
++        marshaller.setProperty(Marshaller.JAXB_FRAGMENT, true);
++    }
++
++    public void setProperty(String prop, Object value) throws PropertyException {
++        marshaller.setProperty(prop, value);
++    }
++
++    public synchronized void setSchema(Schema schema) {
++        marshaller.setSchema(schema);
++    }
++
++    public String marshal(Object instance) throws JAXBException {
++        StringWriter sw = new StringWriter();
++        marshal(instance, sw);
++        return sw.toString();
++    }
++
++    public synchronized void marshal(Object instance, Writer writer) throws JAXBException {
++        marshaller.marshal(instance, writer);
++    }
++
++}
+Index: src/main/java/ru/javaops/masterjava/xml/util/Schemas.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/Schemas.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/util/Schemas.java	(revision )
+@@ -0,0 +1,48 @@
++package ru.javaops.masterjava.xml.util;
++
++import com.google.common.io.Resources;
++import org.xml.sax.SAXException;
++
++import javax.xml.XMLConstants;
++import javax.xml.transform.stream.StreamSource;
++import javax.xml.validation.Schema;
++import javax.xml.validation.SchemaFactory;
++import java.io.File;
++import java.io.StringReader;
++import java.net.URL;
++
++
++public class Schemas {
++
++    // SchemaFactory is not thread-safe
++    private static final SchemaFactory SCHEMA_FACTORY = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
++
++    public static synchronized Schema ofString(String xsd) {
++        try {
++            return SCHEMA_FACTORY.newSchema(new StreamSource(new StringReader(xsd)));
++        } catch (SAXException e) {
++            throw new IllegalArgumentException(e);
++        }
++    }
++
++    public static synchronized Schema ofClasspath(String resource) {
++        // http://digitalsanctum.com/2012/11/30/how-to-read-file-contents-in-java-the-easy-way-with-guava/
++        return ofURL(Resources.getResource(resource));
++    }
++
++    public static synchronized Schema ofURL(URL url) {
++        try {
++            return SCHEMA_FACTORY.newSchema(url);
++        } catch (SAXException e) {
++            throw new IllegalArgumentException(e);
++        }
++    }
++
++    public static synchronized Schema ofFile(File file) {
++        try {
++            return SCHEMA_FACTORY.newSchema(file);
++        } catch (SAXException e) {
++            throw new IllegalArgumentException(e);
++        }
++    }
++}
+Index: src/test/java/ru/javaops/masterjava/xml/util/JaxbParserTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/java/ru/javaops/masterjava/xml/util/JaxbParserTest.java	(revision )
++++ src/test/java/ru/javaops/masterjava/xml/util/JaxbParserTest.java	(revision )
+@@ -0,0 +1,40 @@
++package ru.javaops.masterjava.xml.util;
++
++import com.google.common.io.Resources;
++import org.junit.Test;
++import ru.javaops.masterjava.xml.schema.CityType;
++import ru.javaops.masterjava.xml.schema.ObjectFactory;
++import ru.javaops.masterjava.xml.schema.Payload;
++
++import javax.xml.bind.JAXBElement;
++import javax.xml.namespace.QName;
++
++public class JaxbParserTest {
++    private static final JaxbParser JAXB_PARSER = new JaxbParser(ObjectFactory.class);
++
++    static {
++        JAXB_PARSER.setSchema(Schemas.ofClasspath("payload.xsd"));
++    }
++
++    @Test
++    public void testPayload() throws Exception {
++//        JaxbParserTest.class.getResourceAsStream("/city.xml")
++        Payload payload = JAXB_PARSER.unmarshal(
++                Resources.getResource("payload.xml").openStream());
++        String strPayload = JAXB_PARSER.marshal(payload);
++        JAXB_PARSER.validate(strPayload);
++        System.out.println(strPayload);
++    }
++
++    @Test
++    public void testCity() throws Exception {
++        JAXBElement<CityType> cityElement = JAXB_PARSER.unmarshal(
++                Resources.getResource("city.xml").openStream());
++        CityType city = cityElement.getValue();
++        JAXBElement<CityType> cityElement2 =
++                new JAXBElement<>(new QName("http://javaops.ru", "City"), CityType.class, city);
++        String strCity = JAXB_PARSER.marshal(cityElement2);
++        JAXB_PARSER.validate(strCity);
++        System.out.println(strCity);
++    }
++}
+\ No newline at end of file
+Index: src/main/java/ru/javaops/masterjava/xml/util/JaxbParser.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/JaxbParser.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/util/JaxbParser.java	(revision )
+@@ -0,0 +1,88 @@
++package ru.javaops.masterjava.xml.util;
++
++import org.xml.sax.SAXException;
++
++import javax.xml.bind.JAXBContext;
++import javax.xml.bind.JAXBException;
++import javax.xml.bind.PropertyException;
++import javax.xml.transform.stream.StreamSource;
++import javax.xml.validation.Schema;
++import java.io.*;
++
++
++/**
++ * Marshalling/Unmarshalling JAXB helper
++ * XML Facade
++ */
++public class JaxbParser {
++
++    protected JaxbMarshaller jaxbMarshaller;
++    protected JaxbUnmarshaller jaxbUnmarshaller;
++    protected Schema schema;
++
++    public JaxbParser(Class... classesToBeBound) {
++        try {
++            init(JAXBContext.newInstance(classesToBeBound));
++        } catch (JAXBException e) {
++            throw new IllegalArgumentException(e);
++        }
++    }
++
++    //    http://stackoverflow.com/questions/30643802/what-is-jaxbcontext-newinstancestring-contextpath
++    public JaxbParser(String context) {
++        try {
++            init(JAXBContext.newInstance(context));
++        } catch (JAXBException e) {
++            throw new IllegalArgumentException(e);
++        }
++    }
++
++    private void init(JAXBContext ctx) throws JAXBException {
++        jaxbMarshaller = new JaxbMarshaller(ctx);
++        jaxbUnmarshaller = new JaxbUnmarshaller(ctx);
++    }
++
++    // Unmarshaller
++    public <T> T unmarshal(InputStream is) throws JAXBException {
++        return (T) jaxbUnmarshaller.unmarshal(is);
++    }
++
++    public <T> T unmarshal(Reader reader) throws JAXBException {
++        return (T) jaxbUnmarshaller.unmarshal(reader);
++    }
++
++    public <T> T unmarshal(String str) throws JAXBException {
++        return (T) jaxbUnmarshaller.unmarshal(str);
++    }
++
++    // Marshaller
++    public void setMarshallerProperty(String prop, Object value) {
++        try {
++            jaxbMarshaller.setProperty(prop, value);
++        } catch (PropertyException e) {
++            throw new IllegalArgumentException(e);
++        }
++    }
++
++    public String marshal(Object instance) throws JAXBException {
++        return jaxbMarshaller.marshal(instance);
++    }
++
++    public void marshal(Object instance, Writer writer) throws JAXBException {
++        jaxbMarshaller.marshal(instance, writer);
++    }
++
++    public void setSchema(Schema schema) {
++        this.schema = schema;
++        jaxbUnmarshaller.setSchema(schema);
++        jaxbMarshaller.setSchema(schema);
++    }
++
++    public void validate(String str) throws IOException, SAXException {
++        validate(new StringReader(str));
++    }
++
++    public void validate(Reader reader) throws IOException, SAXException {
++        schema.newValidator().validate(new StreamSource(reader));
++    }
++}
+Index: src/main/java/ru/javaops/masterjava/xml/util/JaxbUnmarshaller.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/JaxbUnmarshaller.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/util/JaxbUnmarshaller.java	(revision )
+@@ -0,0 +1,33 @@
++package ru.javaops.masterjava.xml.util;
++
++import javax.xml.bind.JAXBContext;
++import javax.xml.bind.JAXBException;
++import javax.xml.bind.Unmarshaller;
++import javax.xml.validation.Schema;
++import java.io.InputStream;
++import java.io.Reader;
++import java.io.StringReader;
++
++public class JaxbUnmarshaller {
++    private Unmarshaller unmarshaller;
++
++    public JaxbUnmarshaller(JAXBContext ctx) throws JAXBException {
++        unmarshaller = ctx.createUnmarshaller();
++    }
++
++    public synchronized void setSchema(Schema schema) {
++        unmarshaller.setSchema(schema);
++    }
++
++    public synchronized Object unmarshal(InputStream is) throws JAXBException {
++        return unmarshaller.unmarshal(is);
++    }
++
++    public synchronized Object unmarshal(Reader reader) throws JAXBException {
++        return unmarshaller.unmarshal(reader);
++    }
++
++    public Object unmarshal(String str) throws JAXBException {
++        return unmarshal(new StringReader(str));
++    }
++}
+Index: src/test/resources/city.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/resources/city.xml	(revision )
++++ src/test/resources/city.xml	(revision )
+@@ -0,0 +1,4 @@
++<City id="spb" xmlns="http://javaops.ru"
++      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++      xsi:schemaLocation="http://javaops.ru payload.xsd">Санкт-Петербург
++</City>
+\ No newline at end of file
+Index: pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- pom.xml	(date 1508793189000)
++++ pom.xml	(revision )
+@@ -32,6 +32,14 @@
+             </plugin>
+             <plugin>
+                 <groupId>org.apache.maven.plugins</groupId>
++                <artifactId>maven-surefire-plugin</artifactId>
++                <version>2.20.1</version>
++                <configuration>
++                    <argLine>-Dfile.encoding=UTF-8</argLine>
++                </configuration>
++            </plugin>
++            <plugin>
++                <groupId>org.apache.maven.plugins</groupId>
+                 <artifactId>maven-shade-plugin</artifactId>
+                 <version>3.1.0</version>
+                 <executions>
+@@ -79,6 +87,17 @@
+             <artifactId>jmh-generator-annprocess</artifactId>
+             <version>RELEASE</version>
+             <scope>provided</scope>
++        </dependency>
++        <dependency>
++            <groupId>com.google.guava</groupId>
++            <artifactId>guava</artifactId>
++            <version>21.0</version>
++        </dependency>
++        <dependency>
++            <groupId>junit</groupId>
++            <artifactId>junit</artifactId>
++            <version>4.12</version>
++            <scope>test</scope>
+         </dependency>
+     </dependencies>
+ 

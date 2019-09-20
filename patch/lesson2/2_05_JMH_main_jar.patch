@@ -1,0 +1,85 @@
+Index: src/main/java/ru/javaops/masterjava/matrix/MatrixBenchmark.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/matrix/MatrixBenchmark.java	(date 1508792580000)
++++ src/main/java/ru/javaops/masterjava/matrix/MatrixBenchmark.java	(revision )
+@@ -1,6 +1,11 @@
+ package ru.javaops.masterjava.matrix;
+ 
+ import org.openjdk.jmh.annotations.*;
++import org.openjdk.jmh.runner.Runner;
++import org.openjdk.jmh.runner.RunnerException;
++import org.openjdk.jmh.runner.options.Options;
++import org.openjdk.jmh.runner.options.OptionsBuilder;
++import org.openjdk.jmh.runner.options.TimeValue;
+ 
+ import java.util.concurrent.ExecutorService;
+ import java.util.concurrent.Executors;
+@@ -33,6 +38,16 @@
+ 
+     private ExecutorService executor;
+ 
++    public static void main(String[] args) throws RunnerException {
++        Options options = new OptionsBuilder()
++                .include(MatrixBenchmark.class.getSimpleName())
++                .threads(1)
++                .forks(10)
++                .timeout(TimeValue.minutes(5))
++                .build();
++        new Runner(options).run();
++    }
++
+     //    @Benchmark
+     public int[][] singleThreadMultiplyOpt() throws Exception {
+         return MatrixUtil.singleThreadMultiplyOpt(matrixA, matrixB);
+Index: pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- pom.xml	(date 1508792580000)
++++ pom.xml	(revision )
+@@ -30,6 +30,41 @@
+                     <target>${java.version}</target>
+                 </configuration>
+             </plugin>
++            <plugin>
++                <groupId>org.apache.maven.plugins</groupId>
++                <artifactId>maven-shade-plugin</artifactId>
++                <version>3.1.0</version>
++                <executions>
++                    <execution>
++                        <phase>package</phase>
++                        <goals>
++                            <goal>shade</goal>
++                        </goals>
++                        <configuration>
++                            <finalName>benchmarks</finalName>
++                            <transformers>
++                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
++                                    <mainClass>org.openjdk.jmh.Main</mainClass>
++                                </transformer>
++                            </transformers>
++                            <filters>
++                                <filter>
++                                    <!--
++                                        Shading signed JARs will fail without this.
++                                        http://stackoverflow.com/questions/999489/invalid-signature-file-when-attempting-to-run-a-jar
++                                    -->
++                                    <artifact>*:*</artifact>
++                                    <excludes>
++                                        <exclude>META-INF/*.SF</exclude>
++                                        <exclude>META-INF/*.DSA</exclude>
++                                        <exclude>META-INF/*.RSA</exclude>
++                                    </excludes>
++                                </filter>
++                            </filters>
++                        </configuration>
++                    </execution>
++                </executions>
++            </plugin>
+         </plugins>
+     </build>
+ 

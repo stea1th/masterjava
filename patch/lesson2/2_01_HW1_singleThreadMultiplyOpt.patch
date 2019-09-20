@@ -1,0 +1,54 @@
+Index: src/main/java/ru/javaops/masterjava/matrix/MainMatrix.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/matrix/MainMatrix.java	(revision d9b13eb2b75334b7485b55a83399716ab1899b7e)
++++ src/main/java/ru/javaops/masterjava/matrix/MainMatrix.java	(revision bbace72e8bb84842d5ca73ba331e84d8e8d5ca6c)
+@@ -24,7 +24,7 @@
+         while (count < 6) {
+             System.out.println("Pass " + count);
+             long start = System.currentTimeMillis();
+-            final int[][] matrixC = MatrixUtil.singleThreadMultiply(matrixA, matrixB);
++            final int[][] matrixC = MatrixUtil.singleThreadMultiplyOpt(matrixA, matrixB);
+             double duration = (System.currentTimeMillis() - start) / 1000.;
+             out("Single thread time, sec: %.3f", duration);
+             singleThreadSum += duration;
+Index: src/main/java/ru/javaops/masterjava/matrix/MatrixUtil.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/matrix/MatrixUtil.java	(revision d9b13eb2b75334b7485b55a83399716ab1899b7e)
++++ src/main/java/ru/javaops/masterjava/matrix/MatrixUtil.java	(revision bbace72e8bb84842d5ca73ba331e84d8e8d5ca6c)
+@@ -18,18 +18,24 @@
+         return matrixC;
+     }
+ 
+-    // TODO optimize by https://habrahabr.ru/post/114797/
+-    public static int[][] singleThreadMultiply(int[][] matrixA, int[][] matrixB) {
++    // Optimized by https://habrahabr.ru/post/114797/
++    public static int[][] singleThreadMultiplyOpt(int[][] matrixA, int[][] matrixB) {
+         final int matrixSize = matrixA.length;
+         final int[][] matrixC = new int[matrixSize][matrixSize];
+ 
+-        for (int i = 0; i < matrixSize; i++) {
+-            for (int j = 0; j < matrixSize; j++) {
++        for (int col = 0; col < matrixSize; col++) {
++            final int[] columnB = new int[matrixSize];
++            for (int k = 0; k < matrixSize; k++) {
++                columnB[k] = matrixB[k][col];
++            }
++
++            for (int row = 0; row < matrixSize; row++) {
+                 int sum = 0;
++                final int[] rowA = matrixA[row];
+                 for (int k = 0; k < matrixSize; k++) {
+-                    sum += matrixA[i][k] * matrixB[k][j];
++                    sum += rowA[k] * columnB[k];
+                 }
+-                matrixC[i][j] = sum;
++                matrixC[row][col] = sum;
+             }
+         }
+         return matrixC;

@@ -1,0 +1,754 @@
+Index: src/main/java/ru/javaops/masterjava/xml/schema/ObjectFactory.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/ObjectFactory.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/schema/ObjectFactory.java	(revision )
+@@ -0,0 +1,85 @@
++
++package ru.javaops.masterjava.xml.schema;
++
++import javax.xml.bind.JAXBElement;
++import javax.xml.bind.annotation.XmlElementDecl;
++import javax.xml.bind.annotation.XmlRegistry;
++import javax.xml.namespace.QName;
++
++
++/**
++ * This object contains factory methods for each 
++ * Java content interface and Java element interface 
++ * generated in the ru.javaops.masterjava.xml.schema package. 
++ * <p>An ObjectFactory allows you to programatically 
++ * construct new instances of the Java representation 
++ * for XML content. The Java representation of XML 
++ * content can consist of schema derived interfaces 
++ * and classes representing the binding of schema 
++ * type definitions, element declarations and model 
++ * groups.  Factory methods for each of these are 
++ * provided in this class.
++ * 
++ */
++@XmlRegistry
++public class ObjectFactory {
++
++    private final static QName _City_QNAME = new QName("http://javaops.ru", "City");
++
++    /**
++     * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: ru.javaops.masterjava.xml.schema
++     * 
++     */
++    public ObjectFactory() {
++    }
++
++    /**
++     * Create an instance of {@link Payload }
++     * 
++     */
++    public Payload createPayload() {
++        return new Payload();
++    }
++
++    /**
++     * Create an instance of {@link User }
++     * 
++     */
++    public User createUser() {
++        return new User();
++    }
++
++    /**
++     * Create an instance of {@link Payload.Cities }
++     * 
++     */
++    public Payload.Cities createPayloadCities() {
++        return new Payload.Cities();
++    }
++
++    /**
++     * Create an instance of {@link Payload.Users }
++     * 
++     */
++    public Payload.Users createPayloadUsers() {
++        return new Payload.Users();
++    }
++
++    /**
++     * Create an instance of {@link CityType }
++     * 
++     */
++    public CityType createCityType() {
++        return new CityType();
++    }
++
++    /**
++     * Create an instance of {@link JAXBElement }{@code <}{@link CityType }{@code >}}
++     * 
++     */
++    @XmlElementDecl(namespace = "http://javaops.ru", name = "City")
++    public JAXBElement<CityType> createCity(CityType value) {
++        return new JAXBElement<CityType>(_City_QNAME, CityType.class, null, value);
++    }
++
++}
+Index: src/main/java/ru/javaops/masterjava/xml/schema/Payload.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/Payload.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/schema/Payload.java	(revision )
+@@ -0,0 +1,233 @@
++
++package ru.javaops.masterjava.xml.schema;
++
++import java.util.ArrayList;
++import java.util.List;
++import javax.xml.bind.annotation.XmlAccessType;
++import javax.xml.bind.annotation.XmlAccessorType;
++import javax.xml.bind.annotation.XmlElement;
++import javax.xml.bind.annotation.XmlRootElement;
++import javax.xml.bind.annotation.XmlType;
++
++
++/**
++ * <p>Java class for anonymous complex type.
++ * 
++ * <p>The following schema fragment specifies the expected content contained within this class.
++ * 
++ * <pre>
++ * &lt;complexType>
++ *   &lt;complexContent>
++ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
++ *       &lt;all>
++ *         &lt;element name="Cities">
++ *           &lt;complexType>
++ *             &lt;complexContent>
++ *               &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
++ *                 &lt;sequence maxOccurs="unbounded">
++ *                   &lt;element ref="{http://javaops.ru}City"/>
++ *                 &lt;/sequence>
++ *               &lt;/restriction>
++ *             &lt;/complexContent>
++ *           &lt;/complexType>
++ *         &lt;/element>
++ *         &lt;element name="Users">
++ *           &lt;complexType>
++ *             &lt;complexContent>
++ *               &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
++ *                 &lt;sequence maxOccurs="unbounded" minOccurs="0">
++ *                   &lt;element ref="{http://javaops.ru}User"/>
++ *                 &lt;/sequence>
++ *               &lt;/restriction>
++ *             &lt;/complexContent>
++ *           &lt;/complexType>
++ *         &lt;/element>
++ *       &lt;/all>
++ *     &lt;/restriction>
++ *   &lt;/complexContent>
++ * &lt;/complexType>
++ * </pre>
++ * 
++ * 
++ */
++@XmlAccessorType(XmlAccessType.FIELD)
++@XmlType(name = "", propOrder = {
++
++})
++@XmlRootElement(name = "Payload", namespace = "http://javaops.ru")
++public class Payload {
++
++    @XmlElement(name = "Cities", namespace = "http://javaops.ru", required = true)
++    protected Payload.Cities cities;
++    @XmlElement(name = "Users", namespace = "http://javaops.ru", required = true)
++    protected Payload.Users users;
++
++    /**
++     * Gets the value of the cities property.
++     * 
++     * @return
++     *     possible object is
++     *     {@link Payload.Cities }
++     *     
++     */
++    public Payload.Cities getCities() {
++        return cities;
++    }
++
++    /**
++     * Sets the value of the cities property.
++     * 
++     * @param value
++     *     allowed object is
++     *     {@link Payload.Cities }
++     *     
++     */
++    public void setCities(Payload.Cities value) {
++        this.cities = value;
++    }
++
++    /**
++     * Gets the value of the users property.
++     * 
++     * @return
++     *     possible object is
++     *     {@link Payload.Users }
++     *     
++     */
++    public Payload.Users getUsers() {
++        return users;
++    }
++
++    /**
++     * Sets the value of the users property.
++     * 
++     * @param value
++     *     allowed object is
++     *     {@link Payload.Users }
++     *     
++     */
++    public void setUsers(Payload.Users value) {
++        this.users = value;
++    }
++
++
++    /**
++     * <p>Java class for anonymous complex type.
++     * 
++     * <p>The following schema fragment specifies the expected content contained within this class.
++     * 
++     * <pre>
++     * &lt;complexType>
++     *   &lt;complexContent>
++     *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
++     *       &lt;sequence maxOccurs="unbounded">
++     *         &lt;element ref="{http://javaops.ru}City"/>
++     *       &lt;/sequence>
++     *     &lt;/restriction>
++     *   &lt;/complexContent>
++     * &lt;/complexType>
++     * </pre>
++     * 
++     * 
++     */
++    @XmlAccessorType(XmlAccessType.FIELD)
++    @XmlType(name = "", propOrder = {
++        "city"
++    })
++    public static class Cities {
++
++        @XmlElement(name = "City", namespace = "http://javaops.ru", required = true)
++        protected List<CityType> city;
++
++        /**
++         * Gets the value of the city property.
++         * 
++         * <p>
++         * This accessor method returns a reference to the live list,
++         * not a snapshot. Therefore any modification you make to the
++         * returned list will be present inside the JAXB object.
++         * This is why there is not a <CODE>set</CODE> method for the city property.
++         * 
++         * <p>
++         * For example, to add a new item, do as follows:
++         * <pre>
++         *    getCity().add(newItem);
++         * </pre>
++         * 
++         * 
++         * <p>
++         * Objects of the following type(s) are allowed in the list
++         * {@link CityType }
++         * 
++         * 
++         */
++        public List<CityType> getCity() {
++            if (city == null) {
++                city = new ArrayList<CityType>();
++            }
++            return this.city;
++        }
++
++    }
++
++
++    /**
++     * <p>Java class for anonymous complex type.
++     * 
++     * <p>The following schema fragment specifies the expected content contained within this class.
++     * 
++     * <pre>
++     * &lt;complexType>
++     *   &lt;complexContent>
++     *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
++     *       &lt;sequence maxOccurs="unbounded" minOccurs="0">
++     *         &lt;element ref="{http://javaops.ru}User"/>
++     *       &lt;/sequence>
++     *     &lt;/restriction>
++     *   &lt;/complexContent>
++     * &lt;/complexType>
++     * </pre>
++     * 
++     * 
++     */
++    @XmlAccessorType(XmlAccessType.FIELD)
++    @XmlType(name = "", propOrder = {
++        "user"
++    })
++    public static class Users {
++
++        @XmlElement(name = "User", namespace = "http://javaops.ru")
++        protected List<User> user;
++
++        /**
++         * Gets the value of the user property.
++         * 
++         * <p>
++         * This accessor method returns a reference to the live list,
++         * not a snapshot. Therefore any modification you make to the
++         * returned list will be present inside the JAXB object.
++         * This is why there is not a <CODE>set</CODE> method for the user property.
++         * 
++         * <p>
++         * For example, to add a new item, do as follows:
++         * <pre>
++         *    getUser().add(newItem);
++         * </pre>
++         * 
++         * 
++         * <p>
++         * Objects of the following type(s) are allowed in the list
++         * {@link User }
++         * 
++         * 
++         */
++        public List<User> getUser() {
++            if (user == null) {
++                user = new ArrayList<User>();
++            }
++            return this.user;
++        }
++
++    }
++
++}
+Index: src/main/java/ru/javaops/masterjava/xml/schema/User.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/User.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/schema/User.java	(revision )
+@@ -0,0 +1,151 @@
++
++package ru.javaops.masterjava.xml.schema;
++
++import javax.xml.bind.annotation.XmlAccessType;
++import javax.xml.bind.annotation.XmlAccessorType;
++import javax.xml.bind.annotation.XmlAttribute;
++import javax.xml.bind.annotation.XmlElement;
++import javax.xml.bind.annotation.XmlIDREF;
++import javax.xml.bind.annotation.XmlRootElement;
++import javax.xml.bind.annotation.XmlSchemaType;
++import javax.xml.bind.annotation.XmlType;
++
++
++/**
++ * <p>Java class for anonymous complex type.
++ * 
++ * <p>The following schema fragment specifies the expected content contained within this class.
++ * 
++ * <pre>
++ * &lt;complexType>
++ *   &lt;complexContent>
++ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
++ *       &lt;sequence>
++ *         &lt;element name="email" type="{http://www.w3.org/2001/XMLSchema}string"/>
++ *         &lt;element name="fullName" type="{http://www.w3.org/2001/XMLSchema}string"/>
++ *       &lt;/sequence>
++ *       &lt;attribute name="flag" use="required" type="{http://javaops.ru}flagType" />
++ *       &lt;attribute name="city" use="required" type="{http://www.w3.org/2001/XMLSchema}IDREF" />
++ *     &lt;/restriction>
++ *   &lt;/complexContent>
++ * &lt;/complexType>
++ * </pre>
++ * 
++ * 
++ */
++@XmlAccessorType(XmlAccessType.FIELD)
++@XmlType(name = "", propOrder = {
++    "email",
++    "fullName"
++})
++@XmlRootElement(name = "User", namespace = "http://javaops.ru")
++public class User {
++
++    @XmlElement(namespace = "http://javaops.ru", required = true)
++    protected String email;
++    @XmlElement(namespace = "http://javaops.ru", required = true)
++    protected String fullName;
++    @XmlAttribute(name = "flag", required = true)
++    protected FlagType flag;
++    @XmlAttribute(name = "city", required = true)
++    @XmlIDREF
++    @XmlSchemaType(name = "IDREF")
++    protected Object city;
++
++    /**
++     * Gets the value of the email property.
++     * 
++     * @return
++     *     possible object is
++     *     {@link String }
++     *     
++     */
++    public String getEmail() {
++        return email;
++    }
++
++    /**
++     * Sets the value of the email property.
++     * 
++     * @param value
++     *     allowed object is
++     *     {@link String }
++     *     
++     */
++    public void setEmail(String value) {
++        this.email = value;
++    }
++
++    /**
++     * Gets the value of the fullName property.
++     * 
++     * @return
++     *     possible object is
++     *     {@link String }
++     *     
++     */
++    public String getFullName() {
++        return fullName;
++    }
++
++    /**
++     * Sets the value of the fullName property.
++     * 
++     * @param value
++     *     allowed object is
++     *     {@link String }
++     *     
++     */
++    public void setFullName(String value) {
++        this.fullName = value;
++    }
++
++    /**
++     * Gets the value of the flag property.
++     * 
++     * @return
++     *     possible object is
++     *     {@link FlagType }
++     *     
++     */
++    public FlagType getFlag() {
++        return flag;
++    }
++
++    /**
++     * Sets the value of the flag property.
++     * 
++     * @param value
++     *     allowed object is
++     *     {@link FlagType }
++     *     
++     */
++    public void setFlag(FlagType value) {
++        this.flag = value;
++    }
++
++    /**
++     * Gets the value of the city property.
++     * 
++     * @return
++     *     possible object is
++     *     {@link Object }
++     *     
++     */
++    public Object getCity() {
++        return city;
++    }
++
++    /**
++     * Sets the value of the city property.
++     * 
++     * @param value
++     *     allowed object is
++     *     {@link Object }
++     *     
++     */
++    public void setCity(Object value) {
++        this.city = value;
++    }
++
++}
+Index: src/main/java/ru/javaops/masterjava/xml/schema/FlagType.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/FlagType.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/schema/FlagType.java	(revision )
+@@ -0,0 +1,54 @@
++
++package ru.javaops.masterjava.xml.schema;
++
++import javax.xml.bind.annotation.XmlEnum;
++import javax.xml.bind.annotation.XmlEnumValue;
++import javax.xml.bind.annotation.XmlType;
++
++
++/**
++ * <p>Java class for flagType.
++ * 
++ * <p>The following schema fragment specifies the expected content contained within this class.
++ * <p>
++ * <pre>
++ * &lt;simpleType name="flagType">
++ *   &lt;restriction base="{http://www.w3.org/2001/XMLSchema}string">
++ *     &lt;enumeration value="active"/>
++ *     &lt;enumeration value="deleted"/>
++ *     &lt;enumeration value="superuser"/>
++ *   &lt;/restriction>
++ * &lt;/simpleType>
++ * </pre>
++ * 
++ */
++@XmlType(name = "flagType", namespace = "http://javaops.ru")
++@XmlEnum
++public enum FlagType {
++
++    @XmlEnumValue("active")
++    ACTIVE("active"),
++    @XmlEnumValue("deleted")
++    DELETED("deleted"),
++    @XmlEnumValue("superuser")
++    SUPERUSER("superuser");
++    private final String value;
++
++    FlagType(String v) {
++        value = v;
++    }
++
++    public String value() {
++        return value;
++    }
++
++    public static FlagType fromValue(String v) {
++        for (FlagType c: FlagType.values()) {
++            if (c.value.equals(v)) {
++                return c;
++            }
++        }
++        throw new IllegalArgumentException(v);
++    }
++
++}
+Index: src/test/resources/payload.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/resources/payload.xml	(revision )
++++ src/test/resources/payload.xml	(revision )
+@@ -0,0 +1,23 @@
++<Payload xmlns="http://javaops.ru"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://javaops.ru payload.xsd">
++    <Users>
++        <User flag="active" city="kiv">
++            <email>gmail@gmail.com</email>
++            <fullName>Full Name</fullName>
++        </User>
++        <User flag="superuser" city="spb">
++            <email>admin@javaops.ru</email>
++            <fullName>Admin</fullName>
++        </User>
++        <User flag="deleted" city="spb">
++            <email>mail@yandex.ru</email>
++            <fullName>Deleted</fullName>
++        </User>
++    </Users>
++    <Cities>
++        <City id="spb">Санкт-Петербург</City>
++        <City id="kiv">Киев</City>
++        <City id="mnsk">Минск</City>
++    </Cities>
++</Payload>
+\ No newline at end of file
+Index: src/main/java/ru/javaops/masterjava/xml/schema/CityType.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/CityType.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/schema/CityType.java	(revision )
+@@ -0,0 +1,94 @@
++
++package ru.javaops.masterjava.xml.schema;
++
++import javax.xml.bind.annotation.XmlAccessType;
++import javax.xml.bind.annotation.XmlAccessorType;
++import javax.xml.bind.annotation.XmlAttribute;
++import javax.xml.bind.annotation.XmlID;
++import javax.xml.bind.annotation.XmlSchemaType;
++import javax.xml.bind.annotation.XmlType;
++import javax.xml.bind.annotation.XmlValue;
++import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
++import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
++
++
++/**
++ * <p>Java class for cityType complex type.
++ * 
++ * <p>The following schema fragment specifies the expected content contained within this class.
++ * 
++ * <pre>
++ * &lt;complexType name="cityType">
++ *   &lt;simpleContent>
++ *     &lt;extension base="&lt;http://www.w3.org/2001/XMLSchema>string">
++ *       &lt;attribute name="id" use="required" type="{http://www.w3.org/2001/XMLSchema}ID" />
++ *     &lt;/extension>
++ *   &lt;/simpleContent>
++ * &lt;/complexType>
++ * </pre>
++ * 
++ * 
++ */
++@XmlAccessorType(XmlAccessType.FIELD)
++@XmlType(name = "cityType", namespace = "http://javaops.ru", propOrder = {
++    "value"
++})
++public class CityType {
++
++    @XmlValue
++    protected String value;
++    @XmlAttribute(name = "id", required = true)
++    @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
++    @XmlID
++    @XmlSchemaType(name = "ID")
++    protected String id;
++
++    /**
++     * Gets the value of the value property.
++     * 
++     * @return
++     *     possible object is
++     *     {@link String }
++     *     
++     */
++    public String getValue() {
++        return value;
++    }
++
++    /**
++     * Sets the value of the value property.
++     * 
++     * @param value
++     *     allowed object is
++     *     {@link String }
++     *     
++     */
++    public void setValue(String value) {
++        this.value = value;
++    }
++
++    /**
++     * Gets the value of the id property.
++     * 
++     * @return
++     *     possible object is
++     *     {@link String }
++     *     
++     */
++    public String getId() {
++        return id;
++    }
++
++    /**
++     * Sets the value of the id property.
++     * 
++     * @param value
++     *     allowed object is
++     *     {@link String }
++     *     
++     */
++    public void setId(String value) {
++        this.id = value;
++    }
++
++}
+Index: src/main/resources/payload.xsd
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/resources/payload.xsd	(revision )
++++ src/main/resources/payload.xsd	(revision )
+@@ -0,0 +1,56 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<xs:schema xmlns="http://javaops.ru"
++           xmlns:xs="http://www.w3.org/2001/XMLSchema"
++           targetNamespace="http://javaops.ru"
++           elementFormDefault="qualified" attributeFormDefault="unqualified">
++
++    <xs:element name="Payload">
++        <xs:complexType>
++            <xs:all>
++                <xs:element name="Cities">
++                    <xs:complexType>
++                        <xs:sequence minOccurs="1" maxOccurs="unbounded">
++                            <xs:element ref="City"/>
++                        </xs:sequence>
++                    </xs:complexType>
++                </xs:element>
++                <xs:element name="Users">
++                    <xs:complexType>
++                        <xs:sequence minOccurs="0" maxOccurs="unbounded">
++                            <xs:element ref="User"/>
++                        </xs:sequence>
++                    </xs:complexType>
++                </xs:element>
++            </xs:all>
++        </xs:complexType>
++    </xs:element>
++
++    <xs:element name="User">
++        <xs:complexType>
++            <xs:sequence>
++                <xs:element type="xs:string" name="email"/>
++                <xs:element type="xs:string" name="fullName"/>
++            </xs:sequence>
++            <xs:attribute type="flagType" name="flag" use="required"/>
++            <xs:attribute type="xs:IDREF" name="city" use="required"/>
++        </xs:complexType>
++    </xs:element>
++
++    <xs:simpleType name="flagType">
++        <xs:restriction base="xs:string">
++            <xs:enumeration value="active"/>
++            <xs:enumeration value="deleted"/>
++            <xs:enumeration value="superuser"/>
++        </xs:restriction>
++    </xs:simpleType>
++
++    <xs:element name="City" type="cityType"/>
++
++    <xs:complexType name="cityType">
++        <xs:simpleContent>
++            <xs:extension base="xs:string">
++                <xs:attribute type="xs:ID" name="id" use="required"/>
++            </xs:extension>
++        </xs:simpleContent>
++    </xs:complexType>
++</xs:schema>
+\ No newline at end of file

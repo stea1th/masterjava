@@ -1,0 +1,109 @@
+Index: src/main/java/ru/javaops/masterjava/xml/util/StaxStreamProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/StaxStreamProcessor.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/util/StaxStreamProcessor.java	(revision )
+@@ -0,0 +1,56 @@
++package ru.javaops.masterjava.xml.util;
++
++import javax.xml.stream.XMLInputFactory;
++import javax.xml.stream.XMLStreamException;
++import javax.xml.stream.XMLStreamReader;
++import javax.xml.stream.events.XMLEvent;
++import java.io.InputStream;
++
++public class StaxStreamProcessor implements AutoCloseable {
++    private static final XMLInputFactory FACTORY = XMLInputFactory.newInstance();
++
++    private final XMLStreamReader reader;
++
++    public StaxStreamProcessor(InputStream is) throws XMLStreamException {
++        reader = FACTORY.createXMLStreamReader(is);
++    }
++
++    public XMLStreamReader getReader() {
++        return reader;
++    }
++
++    public boolean doUntil(int stopEvent, String value) throws XMLStreamException {
++        while (reader.hasNext()) {
++            int event = reader.next();
++            if (event == stopEvent) {
++                if (value.equals(getValue(event))) {
++                    return true;
++                }
++            }
++        }
++        return false;
++    }
++
++    public String getValue(int event) throws XMLStreamException {
++        return (event == XMLEvent.CHARACTERS) ? reader.getText() : reader.getLocalName();
++    }
++
++    public String getElementValue(String element) throws XMLStreamException {
++        return doUntil(XMLEvent.START_ELEMENT, element) ? reader.getElementText() : null;
++    }
++
++    public String getText() throws XMLStreamException {
++        return reader.getElementText();
++    }
++
++    @Override
++    public void close() {
++        if (reader != null) {
++            try {
++                reader.close();
++            } catch (XMLStreamException e) {
++                // empty
++            }
++        }
++    }
++}
+Index: src/test/java/ru/javaops/masterjava/xml/util/StaxStreamProcessorTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/java/ru/javaops/masterjava/xml/util/StaxStreamProcessorTest.java	(revision )
++++ src/test/java/ru/javaops/masterjava/xml/util/StaxStreamProcessorTest.java	(revision )
+@@ -0,0 +1,36 @@
++package ru.javaops.masterjava.xml.util;
++
++import com.google.common.io.Resources;
++import org.junit.Test;
++
++import javax.xml.stream.XMLStreamReader;
++import javax.xml.stream.events.XMLEvent;
++
++public class StaxStreamProcessorTest {
++    @Test
++    public void readCities() throws Exception {
++        try (StaxStreamProcessor processor =
++                     new StaxStreamProcessor(Resources.getResource("payload.xml").openStream())) {
++            XMLStreamReader reader = processor.getReader();
++            while (reader.hasNext()) {
++                int event = reader.next();
++                if (event == XMLEvent.START_ELEMENT) {
++                    if ("City".equals(reader.getLocalName())) {
++                        System.out.println(reader.getElementText());
++                    }
++                }
++            }
++        }
++    }
++
++    @Test
++    public void readCities2() throws Exception {
++        try (StaxStreamProcessor processor =
++                     new StaxStreamProcessor(Resources.getResource("payload.xml").openStream())) {
++            String city;
++            while ((city = processor.getElementValue("City")) != null) {
++                System.out.println(city);
++            }
++        }
++    }
++}
+\ No newline at end of file

@@ -1,0 +1,101 @@
+Index: src/main/java/ru/javaops/masterjava/xml/util/XPathProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/XPathProcessor.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/util/XPathProcessor.java	(revision )
+@@ -0,0 +1,58 @@
++package ru.javaops.masterjava.xml.util;
++
++import org.w3c.dom.Document;
++import org.xml.sax.SAXException;
++
++import javax.xml.namespace.QName;
++import javax.xml.parsers.DocumentBuilder;
++import javax.xml.parsers.DocumentBuilderFactory;
++import javax.xml.parsers.ParserConfigurationException;
++import javax.xml.xpath.XPath;
++import javax.xml.xpath.XPathExpression;
++import javax.xml.xpath.XPathExpressionException;
++import javax.xml.xpath.XPathFactory;
++import java.io.IOException;
++import java.io.InputStream;
++
++public class XPathProcessor {
++    private static final DocumentBuilderFactory DOCUMENT_FACTORY = DocumentBuilderFactory.newInstance();
++    private static final DocumentBuilder DOCUMENT_BUILDER;
++
++    private static final XPathFactory XPATH_FACTORY = XPathFactory.newInstance();
++    private static final XPath XPATH = XPATH_FACTORY.newXPath();
++
++    static {
++        DOCUMENT_FACTORY.setNamespaceAware(true);
++        try {
++            DOCUMENT_BUILDER = DOCUMENT_FACTORY.newDocumentBuilder();
++        } catch (ParserConfigurationException e) {
++            throw new IllegalStateException(e);
++        }
++    }
++
++    private final Document doc;
++
++    public XPathProcessor(InputStream is) {
++        try {
++            doc = DOCUMENT_BUILDER.parse(is);
++        } catch (SAXException | IOException e) {
++            throw new IllegalArgumentException(e);
++        }
++    }
++
++    public static synchronized XPathExpression getExpression(String exp) {
++        try {
++            return XPATH.compile(exp);
++        } catch (XPathExpressionException e) {
++            throw new IllegalArgumentException(e);
++        }
++    }
++
++    public <T> T evaluate(XPathExpression expression, QName type) {
++        try {
++            return (T) expression.evaluate(doc, type);
++        } catch (XPathExpressionException e) {
++            throw new IllegalArgumentException(e);
++        }
++    }
++}
+Index: src/test/java/ru/javaops/masterjava/xml/util/XPathProcessorTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/java/ru/javaops/masterjava/xml/util/XPathProcessorTest.java	(revision )
++++ src/test/java/ru/javaops/masterjava/xml/util/XPathProcessorTest.java	(revision )
+@@ -0,0 +1,26 @@
++package ru.javaops.masterjava.xml.util;
++
++import com.google.common.io.Resources;
++import org.junit.Test;
++import org.w3c.dom.NodeList;
++
++import javax.xml.xpath.XPathConstants;
++import javax.xml.xpath.XPathExpression;
++import java.io.InputStream;
++import java.util.stream.IntStream;
++
++public class XPathProcessorTest {
++    @Test
++    public void getCities() throws Exception {
++        try (InputStream is =
++                     Resources.getResource("payload.xml").openStream()) {
++            XPathProcessor processor = new XPathProcessor(is);
++            XPathExpression expression =
++                    XPathProcessor.getExpression("/*[name()='Payload']/*[name()='Cities']/*[name()='City']/text()");
++            NodeList nodes = processor.evaluate(expression, XPathConstants.NODESET);
++            IntStream.range(0, nodes.getLength()).forEach(
++                    i -> System.out.println(nodes.item(i).getNodeValue())
++            );
++        }
++    }
++}
+\ No newline at end of file

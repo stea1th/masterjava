@@ -1,0 +1,95 @@
+Index: src/main/java/ru/javaops/masterjava/xml/util/XsltProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/XsltProcessor.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/util/XsltProcessor.java	(revision )
+@@ -0,0 +1,43 @@
++package ru.javaops.masterjava.xml.util;
++
++import javax.xml.transform.*;
++import javax.xml.transform.stream.StreamResult;
++import javax.xml.transform.stream.StreamSource;
++import java.io.*;
++import java.nio.charset.StandardCharsets;
++
++public class XsltProcessor {
++    private static TransformerFactory FACTORY = TransformerFactory.newInstance();
++    private final Transformer xformer;
++
++    public XsltProcessor(InputStream xslInputStream) {
++        this(new BufferedReader(new InputStreamReader(xslInputStream, StandardCharsets.UTF_8)));
++    }
++
++    public XsltProcessor(Reader xslReader) {
++        try {
++            Templates template = FACTORY.newTemplates(new StreamSource(xslReader));
++            xformer = template.newTransformer();
++        } catch (TransformerConfigurationException e) {
++            throw new IllegalStateException("XSLT transformer creation failed: " + e.toString(), e);
++        }
++    }
++
++    public String transform(InputStream xmlInputStream) throws TransformerException {
++        StringWriter out = new StringWriter();
++        transform(xmlInputStream, out);
++        return out.getBuffer().toString();
++    }
++
++    public void transform(InputStream xmlInputStream, Writer result) throws TransformerException {
++        transform(new BufferedReader(new InputStreamReader(xmlInputStream, StandardCharsets.UTF_8)), result);
++    }
++
++    public void transform(Reader sourceReader, Writer result) throws TransformerException {
++        xformer.transform(new StreamSource(sourceReader), new StreamResult(result));
++    }
++
++    public static String getXsltHeader(String xslt) {
++        return "<?xml-stylesheet type=\"text/xsl\" href=\"" + xslt + "\"?>\n";
++    }
++}
+Index: src/test/java/ru/javaops/masterjava/xml/util/XsltProcessorTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/java/ru/javaops/masterjava/xml/util/XsltProcessorTest.java	(revision )
++++ src/test/java/ru/javaops/masterjava/xml/util/XsltProcessorTest.java	(revision )
+@@ -0,0 +1,18 @@
++package ru.javaops.masterjava.xml.util;
++
++import com.google.common.io.Resources;
++import org.junit.Test;
++
++import java.io.InputStream;
++
++public class XsltProcessorTest {
++    @Test
++    public void transform() throws Exception {
++        try (InputStream xslInputStream = Resources.getResource("cities.xsl").openStream();
++             InputStream xmlInputStream = Resources.getResource("payload.xml").openStream()) {
++
++            XsltProcessor processor = new XsltProcessor(xslInputStream);
++            System.out.println(processor.transform(xmlInputStream));
++        }
++    }
++}
+Index: src/main/resources/cities.xsl
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/resources/cities.xsl	(revision )
++++ src/main/resources/cities.xsl	(revision )
+@@ -0,0 +1,9 @@
++<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
++    <xsl:output method="text" omit-xml-declaration="yes" indent="no"/>
++    <xsl:strip-space elements="*"/>
++    <xsl:template match="/*[name()='Payload']/*[name()='Cities']/*[name()='City']">
++        <xsl:copy-of select="."/>
++        <xsl:text>&#xa;</xsl:text><!-- put in the newline -->
++    </xsl:template>
++    <xsl:template match="text()"/>
++</xsl:stylesheet>
+\ No newline at end of file
