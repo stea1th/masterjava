@@ -1,0 +1,815 @@
+Index: src/main/java/ru/javaops/masterjava/xml/schema/ObjectFactory.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/ObjectFactory.java	(revision 1819bf210a3125dd3597a87c3bbcfd584ad7a254)
++++ src/main/java/ru/javaops/masterjava/xml/schema/ObjectFactory.java	(revision )
+@@ -33,6 +33,14 @@
+     public ObjectFactory() {
+     }
+ 
++    /**
++     * Create an instance of {@link Project }
++     * 
++     */
++    public Project createProject() {
++        return new Project();
++    }
++
+     /**
+      * Create an instance of {@link Payload }
+      * 
+@@ -41,6 +49,14 @@
+         return new Payload();
+     }
+ 
++    /**
++     * Create an instance of {@link Project.Group }
++     * 
++     */
++    public Project.Group createProjectGroup() {
++        return new Project.Group();
++    }
++
+     /**
+      * Create an instance of {@link User }
+      * 
+@@ -49,6 +65,14 @@
+         return new User();
+     }
+ 
++    /**
++     * Create an instance of {@link Payload.Projects }
++     * 
++     */
++    public Payload.Projects createPayloadProjects() {
++        return new Payload.Projects();
++    }
++
+     /**
+      * Create an instance of {@link Payload.Cities }
+      * 
+Index: src/test/resources/payload.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/resources/payload.xml	(revision 1819bf210a3125dd3597a87c3bbcfd584ad7a254)
++++ src/test/resources/payload.xml	(revision )
+@@ -1,23 +1,31 @@
+ <Payload xmlns="http://javaops.ru"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://javaops.ru payload.xsd">
+-    <Users>
+-        <User flag="active" city="kiv">
+-            <email>gmail@gmail.com</email>
+-            <fullName>Full Name</fullName>
+-        </User>
+-        <User flag="superuser" city="spb">
+-            <email>admin@javaops.ru</email>
+-            <fullName>Admin</fullName>
+-        </User>
+-        <User flag="deleted" city="spb">
+-            <email>mail@yandex.ru</email>
+-            <fullName>Deleted</fullName>
+-        </User>
+-    </Users>
++
++    <Projects>
++        <Project name="topjava">
++            <description>Topjava</description>
++            <Group name="topjava06" type="FINISHED"/>
++            <Group name="topjava07" type="FINISHED"/>
++            <Group name="topjava08" type="CURRENT"/>
++        </Project>
++        <Project name="masterjava">
++            <description>Masterjava</description>
++            <Group name="masterjava01" type="CURRENT"/>
++        </Project>
++    </Projects>
+     <Cities>
+         <City id="spb">Санкт-Петербург</City>
++        <City id="mow">Москва</City>
+         <City id="kiv">Киев</City>
+         <City id="mnsk">Минск</City>
+     </Cities>
++    <Users>
++        <User flag="active" city="kiv" email="gmail@gmail.com" groupRefs="topjava07 masterjava01">Full Name</User>
++        <User flag="superuser" city="spb" email="admin@javaops.ru" groupRefs="topjava07 topjava08 masterjava01">Admin</User>
++        <User flag="deleted" city="spb" email="deleted@yandex.ru">Deleted</User>
++        <User flag="active" city="mow" email="user1@gmail.com" groupRefs="masterjava01 topjava06">User1</User>
++        <User flag="active" city="kiv" email="user2@yandex.ru" groupRefs="masterjava01">User2</User>
++        <User flag="active" city="mnsk" email="user3@yandex.ru" groupRefs="masterjava01">User3</User>
++    </Users>
+ </Payload>
+\ No newline at end of file
+Index: src/main/java/ru/javaops/masterjava/xml/schema/Payload.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/Payload.java	(revision 1819bf210a3125dd3597a87c3bbcfd584ad7a254)
++++ src/main/java/ru/javaops/masterjava/xml/schema/Payload.java	(revision )
+@@ -1,13 +1,9 @@
+ 
+ package ru.javaops.masterjava.xml.schema;
+ 
++import javax.xml.bind.annotation.*;
+ import java.util.ArrayList;
+ import java.util.List;
+-import javax.xml.bind.annotation.XmlAccessType;
+-import javax.xml.bind.annotation.XmlAccessorType;
+-import javax.xml.bind.annotation.XmlElement;
+-import javax.xml.bind.annotation.XmlRootElement;
+-import javax.xml.bind.annotation.XmlType;
+ 
+ 
+ /**
+@@ -19,7 +15,18 @@
+  * &lt;complexType>
+  *   &lt;complexContent>
+  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
+- *       &lt;all>
++ *       &lt;sequence>
++ *         &lt;element name="Projects">
++ *           &lt;complexType>
++ *             &lt;complexContent>
++ *               &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
++ *                 &lt;sequence maxOccurs="unbounded">
++ *                   &lt;element ref="{http://javaops.ru}Project"/>
++ *                 &lt;/sequence>
++ *               &lt;/restriction>
++ *             &lt;/complexContent>
++ *           &lt;/complexType>
++ *         &lt;/element>
+  *         &lt;element name="Cities">
+  *           &lt;complexType>
+  *             &lt;complexContent>
+@@ -42,7 +49,7 @@
+  *             &lt;/complexContent>
+  *           &lt;/complexType>
+  *         &lt;/element>
+- *       &lt;/all>
++ *       &lt;/sequence>
+  *     &lt;/restriction>
+  *   &lt;/complexContent>
+  * &lt;/complexType>
+@@ -52,16 +59,44 @@
+  */
+ @XmlAccessorType(XmlAccessType.FIELD)
+ @XmlType(name = "", propOrder = {
+-
++    "projects",
++    "cities",
++    "users"
+ })
+ @XmlRootElement(name = "Payload", namespace = "http://javaops.ru")
+ public class Payload {
+ 
++    @XmlElement(name = "Projects", namespace = "http://javaops.ru", required = true)
++    protected Payload.Projects projects;
+     @XmlElement(name = "Cities", namespace = "http://javaops.ru", required = true)
+     protected Payload.Cities cities;
+     @XmlElement(name = "Users", namespace = "http://javaops.ru", required = true)
+     protected Payload.Users users;
+ 
++    /**
++     * Gets the value of the projects property.
++     * 
++     * @return
++     *     possible object is
++     *     {@link Payload.Projects }
++     *     
++     */
++    public Payload.Projects getProjects() {
++        return projects;
++    }
++
++    /**
++     * Sets the value of the projects property.
++     * 
++     * @param value
++     *     allowed object is
++     *     {@link Payload.Projects }
++     *     
++     */
++    public void setProjects(Payload.Projects value) {
++        this.projects = value;
++    }
++
+     /**
+      * Gets the value of the cities property.
+      * 
+@@ -171,6 +206,66 @@
+     }
+ 
+ 
++    /**
++     * <p>Java class for anonymous complex type.
++     * 
++     * <p>The following schema fragment specifies the expected content contained within this class.
++     * 
++     * <pre>
++     * &lt;complexType>
++     *   &lt;complexContent>
++     *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
++     *       &lt;sequence maxOccurs="unbounded">
++     *         &lt;element ref="{http://javaops.ru}Project"/>
++     *       &lt;/sequence>
++     *     &lt;/restriction>
++     *   &lt;/complexContent>
++     * &lt;/complexType>
++     * </pre>
++     * 
++     * 
++     */
++    @XmlAccessorType(XmlAccessType.FIELD)
++    @XmlType(name = "", propOrder = {
++        "project"
++    })
++    public static class Projects {
++
++        @XmlElement(name = "Project", namespace = "http://javaops.ru", required = true)
++        protected List<Project> project;
++
++        /**
++         * Gets the value of the project property.
++         * 
++         * <p>
++         * This accessor method returns a reference to the live list,
++         * not a snapshot. Therefore any modification you make to the
++         * returned list will be present inside the JAXB object.
++         * This is why there is not a <CODE>set</CODE> method for the project property.
++         * 
++         * <p>
++         * For example, to add a new item, do as follows:
++         * <pre>
++         *    getProject().add(newItem);
++         * </pre>
++         * 
++         * 
++         * <p>
++         * Objects of the following type(s) are allowed in the list
++         * {@link Project }
++         * 
++         * 
++         */
++        public List<Project> getProject() {
++            if (project == null) {
++                project = new ArrayList<Project>();
++            }
++            return this.project;
++        }
++
++    }
++
++
+     /**
+      * <p>Java class for anonymous complex type.
+      * 
+Index: src/main/java/ru/javaops/masterjava/xml/schema/GroupType.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/GroupType.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/schema/GroupType.java	(revision )
+@@ -0,0 +1,40 @@
++
++package ru.javaops.masterjava.xml.schema;
++
++import javax.xml.bind.annotation.XmlEnum;
++import javax.xml.bind.annotation.XmlType;
++
++
++/**
++ * <p>Java class for groupType.
++ * 
++ * <p>The following schema fragment specifies the expected content contained within this class.
++ * <p>
++ * <pre>
++ * &lt;simpleType name="groupType">
++ *   &lt;restriction base="{http://www.w3.org/2001/XMLSchema}string">
++ *     &lt;enumeration value="REGISTERING"/>
++ *     &lt;enumeration value="CURRENT"/>
++ *     &lt;enumeration value="FINISHED"/>
++ *   &lt;/restriction>
++ * &lt;/simpleType>
++ * </pre>
++ * 
++ */
++@XmlType(name = "groupType", namespace = "http://javaops.ru")
++@XmlEnum
++public enum GroupType {
++
++    REGISTERING,
++    CURRENT,
++    FINISHED;
++
++    public String value() {
++        return name();
++    }
++
++    public static GroupType fromValue(String v) {
++        return valueOf(v);
++    }
++
++}
+Index: src/main/java/ru/javaops/masterjava/xml/schema/Project.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/Project.java	(revision )
++++ src/main/java/ru/javaops/masterjava/xml/schema/Project.java	(revision )
+@@ -0,0 +1,216 @@
++
++package ru.javaops.masterjava.xml.schema;
++
++import javax.xml.bind.annotation.*;
++import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
++import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
++import java.util.ArrayList;
++import java.util.List;
++
++
++/**
++ * <p>Java class for anonymous complex type.
++ * 
++ * <p>The following schema fragment specifies the expected content contained within this class.
++ * 
++ * <pre>
++ * &lt;complexType>
++ *   &lt;complexContent>
++ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
++ *       &lt;sequence>
++ *         &lt;element name="description" type="{http://www.w3.org/2001/XMLSchema}string"/>
++ *         &lt;sequence maxOccurs="unbounded">
++ *           &lt;element name="Group">
++ *             &lt;complexType>
++ *               &lt;complexContent>
++ *                 &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
++ *                   &lt;attribute name="name" use="required" type="{http://www.w3.org/2001/XMLSchema}ID" />
++ *                   &lt;attribute name="type" use="required" type="{http://javaops.ru}groupType" />
++ *                 &lt;/restriction>
++ *               &lt;/complexContent>
++ *             &lt;/complexType>
++ *           &lt;/element>
++ *         &lt;/sequence>
++ *       &lt;/sequence>
++ *       &lt;attribute name="name" use="required" type="{http://www.w3.org/2001/XMLSchema}string" />
++ *     &lt;/restriction>
++ *   &lt;/complexContent>
++ * &lt;/complexType>
++ * </pre>
++ * 
++ * 
++ */
++@XmlAccessorType(XmlAccessType.FIELD)
++@XmlType(name = "", propOrder = {
++    "description",
++    "group"
++})
++@XmlRootElement(name = "Project", namespace = "http://javaops.ru")
++public class Project {
++
++    @XmlElement(namespace = "http://javaops.ru", required = true)
++    protected String description;
++    @XmlElement(name = "Group", namespace = "http://javaops.ru", required = true)
++    protected List<Project.Group> group;
++    @XmlAttribute(name = "name", required = true)
++    protected String name;
++
++    /**
++     * Gets the value of the description property.
++     * 
++     * @return
++     *     possible object is
++     *     {@link String }
++     *     
++     */
++    public String getDescription() {
++        return description;
++    }
++
++    /**
++     * Sets the value of the description property.
++     * 
++     * @param value
++     *     allowed object is
++     *     {@link String }
++     *     
++     */
++    public void setDescription(String value) {
++        this.description = value;
++    }
++
++    /**
++     * Gets the value of the group property.
++     * 
++     * <p>
++     * This accessor method returns a reference to the live list,
++     * not a snapshot. Therefore any modification you make to the
++     * returned list will be present inside the JAXB object.
++     * This is why there is not a <CODE>set</CODE> method for the group property.
++     * 
++     * <p>
++     * For example, to add a new item, do as follows:
++     * <pre>
++     *    getGroup().add(newItem);
++     * </pre>
++     * 
++     * 
++     * <p>
++     * Objects of the following type(s) are allowed in the list
++     * {@link Project.Group }
++     * 
++     * 
++     */
++    public List<Project.Group> getGroup() {
++        if (group == null) {
++            group = new ArrayList<Project.Group>();
++        }
++        return this.group;
++    }
++
++    /**
++     * Gets the value of the name property.
++     * 
++     * @return
++     *     possible object is
++     *     {@link String }
++     *     
++     */
++    public String getName() {
++        return name;
++    }
++
++    /**
++     * Sets the value of the name property.
++     * 
++     * @param value
++     *     allowed object is
++     *     {@link String }
++     *     
++     */
++    public void setName(String value) {
++        this.name = value;
++    }
++
++
++    /**
++     * <p>Java class for anonymous complex type.
++     * 
++     * <p>The following schema fragment specifies the expected content contained within this class.
++     * 
++     * <pre>
++     * &lt;complexType>
++     *   &lt;complexContent>
++     *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
++     *       &lt;attribute name="name" use="required" type="{http://www.w3.org/2001/XMLSchema}ID" />
++     *       &lt;attribute name="type" use="required" type="{http://javaops.ru}groupType" />
++     *     &lt;/restriction>
++     *   &lt;/complexContent>
++     * &lt;/complexType>
++     * </pre>
++     * 
++     * 
++     */
++    @XmlAccessorType(XmlAccessType.FIELD)
++    @XmlType(name = "")
++    public static class Group {
++
++        @XmlAttribute(name = "name", required = true)
++        @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
++        @XmlID
++        @XmlSchemaType(name = "ID")
++        protected String name;
++        @XmlAttribute(name = "type", required = true)
++        protected GroupType type;
++
++        /**
++         * Gets the value of the name property.
++         * 
++         * @return
++         *     possible object is
++         *     {@link String }
++         *     
++         */
++        public String getName() {
++            return name;
++        }
++
++        /**
++         * Sets the value of the name property.
++         * 
++         * @param value
++         *     allowed object is
++         *     {@link String }
++         *     
++         */
++        public void setName(String value) {
++            this.name = value;
++        }
++
++        /**
++         * Gets the value of the type property.
++         * 
++         * @return
++         *     possible object is
++         *     {@link GroupType }
++         *     
++         */
++        public GroupType getType() {
++            return type;
++        }
++
++        /**
++         * Sets the value of the type property.
++         * 
++         * @param value
++         *     allowed object is
++         *     {@link GroupType }
++         *     
++         */
++        public void setType(GroupType value) {
++            this.type = value;
++        }
++
++    }
++
++}
+Index: src/main/resources/payload.xsd
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/resources/payload.xsd	(revision 1819bf210a3125dd3597a87c3bbcfd584ad7a254)
++++ src/main/resources/payload.xsd	(revision )
+@@ -6,7 +6,14 @@
+ 
+     <xs:element name="Payload">
+         <xs:complexType>
+-            <xs:all>
++            <xs:sequence>
++                <xs:element name="Projects">
++                    <xs:complexType>
++                        <xs:sequence minOccurs="1" maxOccurs="unbounded">
++                            <xs:element ref="Project"/>
++                        </xs:sequence>
++                    </xs:complexType>
++                </xs:element>
+                 <xs:element name="Cities">
+                     <xs:complexType>
+                         <xs:sequence minOccurs="1" maxOccurs="unbounded">
+@@ -21,18 +28,39 @@
+                         </xs:sequence>
+                     </xs:complexType>
+                 </xs:element>
+-            </xs:all>
++            </xs:sequence>
+         </xs:complexType>
+     </xs:element>
+ 
+-    <xs:element name="User">
++    <xs:element name="Project">
+         <xs:complexType>
+             <xs:sequence>
+-                <xs:element type="xs:string" name="email"/>
+-                <xs:element type="xs:string" name="fullName"/>
++                <xs:element type="xs:string" name="description"/>
++                <xs:sequence minOccurs="1" maxOccurs="unbounded">
++                    <xs:element name="Group">
++                        <xs:complexType>
++                            <xs:attribute type="xs:ID" name="name" use="required"/>
++                            <xs:attribute type="groupType" name="type" use="required"/>
++                        </xs:complexType>
++                    </xs:element>
++                </xs:sequence>
+             </xs:sequence>
+-            <xs:attribute type="flagType" name="flag" use="required"/>
+-            <xs:attribute type="xs:IDREF" name="city" use="required"/>
++            <xs:attribute type="xs:string" name="name" use="required"/>
++        </xs:complexType>
++    </xs:element>
++
++    <xs:element name="City" type="cityType"/>
++
++    <xs:element name="User">
++        <xs:complexType>
++            <xs:simpleContent>
++                <xs:extension base="xs:string">
++                    <xs:attribute type="emailAddressType" name="email"/>
++                    <xs:attribute type="flagType" name="flag" use="required"/>
++                    <xs:attribute type="xs:IDREF" name="city" use="required"/>
++                    <xs:attribute type="xs:IDREFS" name="groupRefs" use="optional"/>
++                </xs:extension>
++            </xs:simpleContent>
+         </xs:complexType>
+     </xs:element>
+ 
+@@ -44,7 +72,13 @@
+         </xs:restriction>
+     </xs:simpleType>
+ 
+-    <xs:element name="City" type="cityType"/>
++    <xs:simpleType name="groupType">
++        <xs:restriction base="xs:string">
++            <xs:enumeration value="REGISTERING"/>
++            <xs:enumeration value="CURRENT"/>
++            <xs:enumeration value="FINISHED"/>
++        </xs:restriction>
++    </xs:simpleType>
+ 
+     <xs:complexType name="cityType">
+         <xs:simpleContent>
+@@ -53,4 +87,11 @@
+             </xs:extension>
+         </xs:simpleContent>
+     </xs:complexType>
++
++    <!--http://stackoverflow.com/a/2147904/548473    -->
++    <xs:simpleType name="emailAddressType">
++        <xs:restriction base="xs:string">
++            <xs:pattern value="([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})"/>
++        </xs:restriction>
++    </xs:simpleType>
+ </xs:schema>
+\ No newline at end of file
+Index: src/main/java/ru/javaops/masterjava/xml/schema/User.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/User.java	(revision 1819bf210a3125dd3597a87c3bbcfd584ad7a254)
++++ src/main/java/ru/javaops/masterjava/xml/schema/User.java	(revision )
+@@ -1,14 +1,9 @@
+ 
+ package ru.javaops.masterjava.xml.schema;
+ 
+-import javax.xml.bind.annotation.XmlAccessType;
+-import javax.xml.bind.annotation.XmlAccessorType;
+-import javax.xml.bind.annotation.XmlAttribute;
+-import javax.xml.bind.annotation.XmlElement;
+-import javax.xml.bind.annotation.XmlIDREF;
+-import javax.xml.bind.annotation.XmlRootElement;
+-import javax.xml.bind.annotation.XmlSchemaType;
+-import javax.xml.bind.annotation.XmlType;
++import javax.xml.bind.annotation.*;
++import java.util.ArrayList;
++import java.util.List;
+ 
+ 
+ /**
+@@ -18,16 +13,14 @@
+  * 
+  * <pre>
+  * &lt;complexType>
+- *   &lt;complexContent>
+- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
+- *       &lt;sequence>
+- *         &lt;element name="email" type="{http://www.w3.org/2001/XMLSchema}string"/>
+- *         &lt;element name="fullName" type="{http://www.w3.org/2001/XMLSchema}string"/>
+- *       &lt;/sequence>
++ *   &lt;simpleContent>
++ *     &lt;extension base="&lt;http://www.w3.org/2001/XMLSchema>string">
++ *       &lt;attribute name="email" type="{http://javaops.ru}emailAddressType" />
+  *       &lt;attribute name="flag" use="required" type="{http://javaops.ru}flagType" />
+  *       &lt;attribute name="city" use="required" type="{http://www.w3.org/2001/XMLSchema}IDREF" />
+- *     &lt;/restriction>
+- *   &lt;/complexContent>
++ *       &lt;attribute name="groupRefs" type="{http://www.w3.org/2001/XMLSchema}IDREFS" />
++ *     &lt;/extension>
++ *   &lt;/simpleContent>
+  * &lt;/complexType>
+  * </pre>
+  * 
+@@ -35,69 +28,72 @@
+  */
+ @XmlAccessorType(XmlAccessType.FIELD)
+ @XmlType(name = "", propOrder = {
+-    "email",
+-    "fullName"
++    "value"
+ })
+ @XmlRootElement(name = "User", namespace = "http://javaops.ru")
+ public class User {
+ 
+-    @XmlElement(namespace = "http://javaops.ru", required = true)
++    @XmlValue
++    protected String value;
++    @XmlAttribute(name = "email")
+     protected String email;
+-    @XmlElement(namespace = "http://javaops.ru", required = true)
+-    protected String fullName;
+     @XmlAttribute(name = "flag", required = true)
+     protected FlagType flag;
+     @XmlAttribute(name = "city", required = true)
+     @XmlIDREF
+     @XmlSchemaType(name = "IDREF")
+     protected Object city;
++    @XmlAttribute(name = "groupRefs")
++    @XmlIDREF
++    @XmlSchemaType(name = "IDREFS")
++    protected List<Object> groupRefs;
+ 
+     /**
+-     * Gets the value of the email property.
++     * Gets the value of the value property.
+      * 
+      * @return
+      *     possible object is
+      *     {@link String }
+      *     
+      */
+-    public String getEmail() {
+-        return email;
++    public String getValue() {
++        return value;
+     }
+ 
+     /**
+-     * Sets the value of the email property.
++     * Sets the value of the value property.
+      * 
+      * @param value
+      *     allowed object is
+      *     {@link String }
+      *     
+      */
+-    public void setEmail(String value) {
+-        this.email = value;
++    public void setValue(String value) {
++        this.value = value;
+     }
+ 
+     /**
+-     * Gets the value of the fullName property.
++     * Gets the value of the email property.
+      * 
+      * @return
+      *     possible object is
+      *     {@link String }
+      *     
+      */
+-    public String getFullName() {
+-        return fullName;
++    public String getEmail() {
++        return email;
+     }
+ 
+     /**
+-     * Sets the value of the fullName property.
++     * Sets the value of the email property.
+      * 
+      * @param value
+      *     allowed object is
+      *     {@link String }
+      *     
+      */
+-    public void setFullName(String value) {
+-        this.fullName = value;
++    public void setEmail(String value) {
++        this.email = value;
+     }
+ 
+     /**
+@@ -148,4 +144,37 @@
+         this.city = value;
+     }
+ 
++    /**
++     * Gets the value of the groupRefs property.
++     * 
++     * <p>
++     * This accessor method returns a reference to the live list,
++     * not a snapshot. Therefore any modification you make to the
++     * returned list will be present inside the JAXB object.
++     * This is why there is not a <CODE>set</CODE> method for the groupRefs property.
++     * 
++     * <p>
++     * For example, to add a new item, do as follows:
++     * <pre>
++     *    getGroupRefs().add(newItem);
++     * </pre>
++     * 
++     * 
++     * <p>
++     * Objects of the following type(s) are allowed in the list
++     * {@link Object }
++     * 
++     * 
++     */
++    public List<Object> getGroupRefs() {
++        if (groupRefs == null) {
++            groupRefs = new ArrayList<Object>();
++        }
++        return this.groupRefs;
++    }
++
++    @Override
++    public String toString() {
++        return value + '(' + email + ')';
++    }
+ }

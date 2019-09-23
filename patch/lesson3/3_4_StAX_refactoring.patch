@@ -1,0 +1,158 @@
+Index: src/main/java/ru/javaops/masterjava/xml/util/JaxbParser.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/JaxbParser.java	(revision 52e6136915e10695a7f83412a9fd977bc2389d7b)
++++ src/main/java/ru/javaops/masterjava/xml/util/JaxbParser.java	(revision 5918da0d89f8a9146dba4d9e1ca41211807d7d4b)
+@@ -5,6 +5,7 @@
+ import javax.xml.bind.JAXBContext;
+ import javax.xml.bind.JAXBException;
+ import javax.xml.bind.PropertyException;
++import javax.xml.stream.XMLStreamReader;
+ import javax.xml.transform.stream.StreamSource;
+ import javax.xml.validation.Schema;
+ import java.io.*;
+@@ -55,6 +56,10 @@
+         return (T) jaxbUnmarshaller.unmarshal(str);
+     }
+ 
++    public <T> T unmarshal(XMLStreamReader reader, Class<T> elementClass) throws JAXBException {
++        return jaxbUnmarshaller.unmarshal(reader, elementClass);
++    }
++
+     // Marshaller
+     public void setMarshallerProperty(String prop, Object value) {
+         try {
+Index: src/main/java/ru/javaops/masterjava/xml/util/JaxbUnmarshaller.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/JaxbUnmarshaller.java	(revision 52e6136915e10695a7f83412a9fd977bc2389d7b)
++++ src/main/java/ru/javaops/masterjava/xml/util/JaxbUnmarshaller.java	(revision 5918da0d89f8a9146dba4d9e1ca41211807d7d4b)
+@@ -3,6 +3,7 @@
+ import javax.xml.bind.JAXBContext;
+ import javax.xml.bind.JAXBException;
+ import javax.xml.bind.Unmarshaller;
++import javax.xml.stream.XMLStreamReader;
+ import javax.xml.validation.Schema;
+ import java.io.InputStream;
+ import java.io.Reader;
+@@ -30,4 +31,8 @@
+     public Object unmarshal(String str) throws JAXBException {
+         return unmarshal(new StringReader(str));
+     }
+-}
++
++    public synchronized <T> T unmarshal(XMLStreamReader reader, Class<T> elementClass) throws JAXBException {
++        return unmarshaller.unmarshal(reader, elementClass).getValue();
++    }
++}
+\ No newline at end of file
+Index: src/main/java/ru/javaops/masterjava/xml/util/StaxStreamProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/StaxStreamProcessor.java	(revision 52e6136915e10695a7f83412a9fd977bc2389d7b)
++++ src/main/java/ru/javaops/masterjava/xml/util/StaxStreamProcessor.java	(revision 5918da0d89f8a9146dba4d9e1ca41211807d7d4b)
+@@ -15,31 +15,43 @@
+         reader = FACTORY.createXMLStreamReader(is);
+     }
+ 
++    public boolean startElement(String element, String parent) throws XMLStreamException {
++        while (reader.hasNext()) {
++            int event = reader.next();
++            if (parent != null && isElementEnd(event, parent)) {
++                return false;
++            }
++            if (isElementStart(event, element)) {
++                return true;
++            }
++        }
++        return false;
++    }
++
++    private boolean isElementStart(int event, String el) {
++        return event == XMLEvent.START_ELEMENT && el.equals(reader.getLocalName());
++    }
++
++    private boolean isElementEnd(int event, String el) {
++        return event == XMLEvent.END_ELEMENT && el.equals(reader.getLocalName());
++    }
++
+     public XMLStreamReader getReader() {
+         return reader;
+     }
+ 
+-    public boolean doUntil(int stopEvent, String value) throws XMLStreamException {
+-        return doUntilAny(stopEvent, value) != null;
+-    }
+-
+     public String getAttribute(String name) throws XMLStreamException {
+         return reader.getAttributeValue(null, name);
+     }
+ 
+-    public String doUntilAny(int stopEvent, String... values) throws XMLStreamException {
++    public boolean doUntil(int stopEvent, String value) throws XMLStreamException {
+         while (reader.hasNext()) {
+             int event = reader.next();
+-            if (event == stopEvent) {
+-                String xmlValue = getValue(event);
+-                for (String value : values) {
+-                    if (value.equals(xmlValue)) {
+-                        return xmlValue;
+-                    }
+-                }
++            if (event == stopEvent && value.equals(getValue(event))) {
++                return true;
+             }
+         }
+-        return null;
++        return false;
+     }
+ 
+     public String getValue(int event) throws XMLStreamException {
+Index: src/test/java/ru/javaops/masterjava/MainXml.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/java/ru/javaops/masterjava/MainXml.java	(revision 52e6136915e10695a7f83412a9fd977bc2389d7b)
++++ src/test/java/ru/javaops/masterjava/MainXml.java	(revision 5918da0d89f8a9146dba4d9e1ca41211807d7d4b)
+@@ -80,16 +80,12 @@
+ 
+             // Projects loop
+             projects:
+-            while (processor.doUntil(XMLEvent.START_ELEMENT, "Project")) {
++            while (processor.startElement("Project", "Projects")) {
+                 if (projectName.equals(processor.getAttribute("name"))) {
+-                    // Groups loop
+-                    String element;
+-                    while ((element = processor.doUntilAny(XMLEvent.START_ELEMENT, "Project", "Group", "Users")) != null) {
+-                        if (!element.equals("Group")) {
+-                            break projects;
+-                        }
++                    while (processor.startElement("Group", "Project")) {
+                         groupNames.add(processor.getAttribute("name"));
+                     }
++                    break;
+                 }
+             }
+             if (groupNames.isEmpty()) {
+@@ -99,12 +95,11 @@
+             // Users loop
+             Set<User> users = new TreeSet<>(USER_COMPARATOR);
+ 
++            JaxbParser parser = new JaxbParser(User.class);
+             while (processor.doUntil(XMLEvent.START_ELEMENT, "User")) {
+                 String groupRefs = processor.getAttribute("groupRefs");
+                 if (!Collections.disjoint(groupNames, Splitter.on(' ').splitToList(nullToEmpty(groupRefs)))) {
+-                    User user = new User();
+-                    user.setEmail(processor.getAttribute("email"));
+-                    user.setValue(processor.getText());
++                    User user = parser.unmarshal(processor.getReader(), User.class);
+                     users.add(user);
+                 }
+             }

@@ -1,0 +1,104 @@
+Index: src/main/resources/groups.xsl
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/resources/groups.xsl	(revision )
++++ src/main/resources/groups.xsl	(revision )
+@@ -0,0 +1,37 @@
++<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
++                xmlns:p="http://javaops.ru">
++
++    <xsl:output method="html" omit-xml-declaration="yes" indent="yes"/>
++    <xsl:param name="projectName"/>
++
++    <xsl:template match="/">
++        <html>
++            <head>
++                <title>
++                    <xsl:value-of select="$projectName"/> groups
++                </title>
++            </head>
++            <body>
++                <h1>
++                    <xsl:value-of select="$projectName"/> groups
++                </h1>
++                <table border="1" cellpadding="8" cellspacing="0">
++                    <tr>
++                        <th>Group</th>
++                        <th>Type</th>
++                    </tr>
++                    <xsl:for-each select="/p:Payload/p:Projects/p:Project[@name=$projectName]/p:Group">
++                        <tr>
++                            <td>
++                                <xsl:value-of select="@name"/>
++                            </td>
++                            <td>
++                                <xsl:value-of select="@type"/>
++                            </td>
++                        </tr>
++                    </xsl:for-each>
++                </table>
++            </body>
++        </html>
++    </xsl:template>
++</xsl:stylesheet>
+\ No newline at end of file
+Index: src/main/java/ru/javaops/masterjava/xml/util/XsltProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/XsltProcessor.java	(date 1509357844000)
++++ src/main/java/ru/javaops/masterjava/xml/util/XsltProcessor.java	(revision )
+@@ -40,4 +40,8 @@
+     public static String getXsltHeader(String xslt) {
+         return "<?xml-stylesheet type=\"text/xsl\" href=\"" + xslt + "\"?>\n";
+     }
++
++    public void setParameter(String name, String value) {
++        xformer.setParameter(name, value);
++    }
+ }
+Index: src/test/java/ru/javaops/masterjava/MainXml.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/java/ru/javaops/masterjava/MainXml.java	(date 1509357844000)
++++ src/test/java/ru/javaops/masterjava/MainXml.java	(revision )
+@@ -11,6 +11,7 @@
+ import ru.javaops.masterjava.xml.util.JaxbParser;
+ import ru.javaops.masterjava.xml.util.Schemas;
+ import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
++import ru.javaops.masterjava.xml.util.XsltProcessor;
+ 
+ import java.io.InputStream;
+ import java.io.Writer;
+@@ -48,6 +49,12 @@
+         System.out.println();
+         users = processByStax(projectName, payloadUrl);
+         users.forEach(System.out::println);
++
++        System.out.println();
++        html = transform(projectName, payloadUrl);
++        try (Writer writer = Files.newBufferedWriter(Paths.get("out/groups.html"))) {
++            writer.write(html);
++        }
+     }
+ 
+     private static Set<User> parseByJaxb(String projectName, URL payloadUrl) throws Exception {
+@@ -119,4 +126,13 @@
+                 body().with(h1(projectName + " users"), table)
+         ).render();
+     }
++
++    private static String transform(String projectName, URL payloadUrl) throws Exception {
++        URL xsl = Resources.getResource("groups.xsl");
++        try (InputStream xmlStream = payloadUrl.openStream(); InputStream xslStream = xsl.openStream()) {
++            XsltProcessor processor = new XsltProcessor(xslStream);
++            processor.setParameter("projectName", projectName);
++            return processor.transform(xmlStream);
++        }
++    }
+ }

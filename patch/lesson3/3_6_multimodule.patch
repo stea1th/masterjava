@@ -1,0 +1,294 @@
+Index: common/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- common/pom.xml	(revision )
++++ common/pom.xml	(revision )
+@@ -0,0 +1,21 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++
++    <parent>
++        <groupId>ru.javaops</groupId>
++        <artifactId>parent</artifactId>
++        <relativePath>../parent/pom.xml</relativePath>
++        <version>1.0-SNAPSHOT</version>
++    </parent>
++
++    <artifactId>common</artifactId>
++    <version>1.0-SNAPSHOT</version>
++    <packaging>jar</packaging>
++    <name>Common</name>
++
++    <dependencies>
++    </dependencies>
++</project>
+\ No newline at end of file
+Index: parent/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- parent/pom.xml	(revision )
++++ parent/pom.xml	(revision )
+@@ -0,0 +1,69 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++
++    <groupId>ru.javaops</groupId>
++    <artifactId>parent</artifactId>
++    <packaging>pom</packaging>
++    <version>1.0-SNAPSHOT</version>
++    <name>Parent</name>
++
++    <properties>
++        <java.version>1.8</java.version>
++        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
++        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
++    </properties>
++
++    <build>
++        <defaultGoal>install</defaultGoal>
++        <plugins>
++            <plugin>
++                <groupId>org.apache.maven.plugins</groupId>
++                <artifactId>maven-compiler-plugin</artifactId>
++                <version>3.7.0</version>
++                <configuration>
++                    <source>${java.version}</source>
++                    <target>${java.version}</target>
++                </configuration>
++            </plugin>
++            <plugin>
++                <groupId>org.apache.maven.plugins</groupId>
++                <artifactId>maven-surefire-plugin</artifactId>
++                <version>2.20.1</version>
++                <configuration>
++                    <argLine>-Dfile.encoding=UTF-8</argLine>
++                </configuration>
++            </plugin>
++        </plugins>
++    </build>
++
++    <dependencies>
++        <dependency>
++            <groupId>com.google.guava</groupId>
++            <artifactId>guava</artifactId>
++            <version>23.3-jre</version>
++        </dependency>
++        <dependency>
++            <groupId>one.util</groupId>
++            <artifactId>streamex</artifactId>
++            <version>RELEASE</version>
++        </dependency>
++
++        <!--Test-->
++        <dependency>
++            <groupId>junit</groupId>
++            <artifactId>junit</artifactId>
++            <version>4.12</version>
++            <scope>test</scope>
++        </dependency>
++    </dependencies>
++
++    <profiles>
++    </profiles>
++
++    <dependencyManagement>
++    </dependencyManagement>
++
++</project>
+\ No newline at end of file
+Index: pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- pom.xml	(revision 9ee8ecec87012db4d0e272f8651cf4fdbe83b520)
++++ pom.xml	(revision )
+@@ -4,119 +4,21 @@
+ 
+     <groupId>ru.javaops</groupId>
+     <artifactId>masterjava</artifactId>
+-    <packaging>jar</packaging>
++    <packaging>pom</packaging>
+ 
+     <version>1.0-SNAPSHOT</version>
+ 
+     <name>Master Java</name>
+     <url>https://github.com/JavaOPs/masterjava</url>
+ 
+-    <properties>
+-        <java.version>1.8</java.version>
+-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+-    </properties>
+-
+-    <build>
+-        <finalName>masterjava</finalName>
+-        <defaultGoal>install</defaultGoal>
+-        <plugins>
+-            <plugin>
+-                <groupId>org.apache.maven.plugins</groupId>
+-                <artifactId>maven-compiler-plugin</artifactId>
+-                <version>3.7.0</version>
+-                <configuration>
+-                    <source>${java.version}</source>
+-                    <target>${java.version}</target>
+-                </configuration>
+-            </plugin>
+-            <plugin>
+-                <groupId>org.apache.maven.plugins</groupId>
+-                <artifactId>maven-surefire-plugin</artifactId>
+-                <version>2.20.1</version>
+-                <configuration>
+-                    <argLine>-Dfile.encoding=UTF-8</argLine>
+-                </configuration>
+-            </plugin>
+-            <plugin>
+-                <groupId>org.apache.maven.plugins</groupId>
+-                <artifactId>maven-shade-plugin</artifactId>
+-                <version>3.1.0</version>
+-                <executions>
+-                    <execution>
+-                        <phase>package</phase>
+-                        <goals>
+-                            <goal>shade</goal>
+-                        </goals>
+-                        <configuration>
+-                            <finalName>benchmarks</finalName>
+-                            <transformers>
+-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+-                                    <mainClass>org.openjdk.jmh.Main</mainClass>
+-                                </transformer>
+-                            </transformers>
+-                            <filters>
+-                                <filter>
+-                                    <!--
+-                                        Shading signed JARs will fail without this.
+-                                        http://stackoverflow.com/questions/999489/invalid-signature-file-when-attempting-to-run-a-jar
+-                                    -->
+-                                    <artifact>*:*</artifact>
+-                                    <excludes>
+-                                        <exclude>META-INF/*.SF</exclude>
+-                                        <exclude>META-INF/*.DSA</exclude>
+-                                        <exclude>META-INF/*.RSA</exclude>
+-                                    </excludes>
+-                                </filter>
+-                            </filters>
+-                        </configuration>
+-                    </execution>
+-                </executions>
+-            </plugin>
+-        </plugins>
+-    </build>
+-
+-    <dependencies>
+-        <dependency>
+-            <groupId>org.openjdk.jmh</groupId>
+-            <artifactId>jmh-core</artifactId>
+-            <version>RELEASE</version>
+-        </dependency>
+-        <dependency>
+-            <groupId>org.openjdk.jmh</groupId>
+-            <artifactId>jmh-generator-annprocess</artifactId>
+-            <version>RELEASE</version>
+-            <scope>provided</scope>
+-        </dependency>
+-        <dependency>
+-            <groupId>com.google.guava</groupId>
+-            <artifactId>guava</artifactId>
+-            <version>21.0</version>
+-        </dependency>
+-        <dependency>
+-            <groupId>one.util</groupId>
+-            <artifactId>streamex</artifactId>
+-            <version>RELEASE</version>
+-        </dependency>
+-
+-        <dependency>
+-            <groupId>com.j2html</groupId>
+-            <artifactId>j2html</artifactId>
+-            <version>RELEASE</version>
+-        </dependency>
+-
+-        <!--Test-->
+-        <dependency>
+-            <groupId>junit</groupId>
+-            <artifactId>junit</artifactId>
+-            <version>4.12</version>
+-            <scope>test</scope>
+-        </dependency>
+-    </dependencies>
+-
+-    <profiles>
+-    </profiles>
+-
+-    <dependencyManagement>
+-    </dependencyManagement>
++    <modules>
++        <module>upload</module>
++        <module>common</module>
++<!--
++        <module>webapp</module>
++        <module>mail-service</module>
++        <module>mail-api</module>
++        <module>test</module>
++-->
++    </modules>
+ </project>
+Index: upload/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- upload/pom.xml	(revision )
++++ upload/pom.xml	(revision )
+@@ -0,0 +1,39 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++
++    <parent>
++        <groupId>ru.javaops</groupId>
++        <artifactId>parent</artifactId>
++        <relativePath>../parent/pom.xml</relativePath>
++        <version>1.0-SNAPSHOT</version>
++    </parent>
++
++    <artifactId>upload</artifactId>
++    <version>1.0-SNAPSHOT</version>
++    <packaging>war</packaging>
++    <name>Upload</name>
++
++    <build>
++        <plugins>
++            <plugin>
++                <groupId>org.apache.maven.plugins</groupId>
++                <artifactId>maven-war-plugin</artifactId>
++                <version>3.2.0</version>
++                <configuration>
++                    <failOnMissingWebXml>false</failOnMissingWebXml>
++                </configuration>
++            </plugin>
++        </plugins>
++    </build>
++
++    <dependencies>
++        <dependency>
++            <groupId>ru.javaops</groupId>
++            <artifactId>common</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++    </dependencies>
++</project>
+\ No newline at end of file
