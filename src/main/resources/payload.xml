@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <Payload xmlns="http://javaops.ru"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://javaops.ru payload.xsd">
@@ -21,26 +22,26 @@
         <City id="mnsk">Минск</City>
     </Cities>
     <Projects>
-        <Project id="topjava">
+        <Project id="tpjv">
             <title>topjava</title>
             <description>intermediate lessons</description>
         </Project>
-        <Project id="masterjava">
+        <Project id="mstjv">
             <title>masterjava</title>
             <description>supreme lessons</description>
         </Project>
     </Projects>
     <Groups>
-        <Group status="CURRENT" id="tpjv1" project="topjava">
+        <Group status="CURRENT" id="tpjv1" project="tpjv">
             <title>topjava1</title>
         </Group>
-        <Group status="FINISHED" id="tpjv2" project="topjava">
+        <Group status="FINISHED" id="tpjv2" project="tpjv">
             <title>topjava2</title>
         </Group>
-        <Group status="REGISTERING" id="tpjv3" project="topjava">
+        <Group status="REGISTERING" id="tpjv3" project="tpjv">
             <title>topjava3</title>
         </Group>
-        <Group status="FINISHED" id="mstjv1" project="masterjava">
+        <Group status="FINISHED" id="mstjv1" project="mstjv">
             <title>masterjava1</title>
         </Group>
     </Groups>
