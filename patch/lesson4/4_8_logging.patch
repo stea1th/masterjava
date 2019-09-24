@@ -1,0 +1,184 @@
+Index: config_templates/logback.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- config_templates/logback.xml	(revision )
++++ config_templates/logback.xml	(revision )
+@@ -0,0 +1,40 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<configuration scan="true" scanPeriod="30 seconds">
++    <!--https://www.mkyong.com/logging/logback-xml-example/-->
++
++    <!-- To enable JMX Management -->
++    <jmxConfigurator/>
++
++    <property name="LOG_DIR" value="/apps/masterjava/logs/"/>
++
++    <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
++        <file>${LOG_DIR}/${project.build.finalName}.log</file>
++        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
++            <charset>UTF-8</charset>
++            <pattern>%d{yyyy-MM-dd_HH:mm:ss.SSS} [%thread] %-5level %logger{0} [%file:%line] - %msg%n</pattern>
++        </encoder>
++        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
++            <!-- rollover daily -->
++            <fileNamePattern>${LOG_DIR}/archived/${project.build.finalName}.%d{yyyy-MM-dd}.%i.log
++            </fileNamePattern>
++            <timeBasedFileNamingAndTriggeringPolicy
++                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
++                <maxFileSize>5MB</maxFileSize>
++            </timeBasedFileNamingAndTriggeringPolicy>
++        </rollingPolicy>
++    </appender>
++
++    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
++        <encoder>
++            <charset>UTF-8</charset>
++            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{5} [%file:%line] - %msg%n</pattern>
++        </encoder>
++    </appender>
++
++    <logger name="ru.javaops.masterjava" level="info"/>
++
++    <root level="warn">
++        <appender-ref ref="file"/>
++        <appender-ref ref="console"/>
++    </root>
++</configuration>
+Index: config_templates/logback-test.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- config_templates/logback-test.xml	(revision )
++++ config_templates/logback-test.xml	(revision )
+@@ -0,0 +1,20 @@
++<configuration>
++
++    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
++        <resetJUL>true</resetJUL>
++    </contextListener>
++
++    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
++        <encoder>
++            <charset>UTF-8</charset>
++            <pattern>%-5level %logger{0} [%file:%line] %msg%n</pattern>
++        </encoder>
++    </appender>
++
++    <logger name="ru.javaops.masterjava" level="debug"/>
++
++    <root level="info">
++        <appender-ref ref="console"/>
++    </root>
++
++</configuration>
+\ No newline at end of file
+Index: web/common-web/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/common-web/pom.xml	(date 1509893613000)
++++ web/common-web/pom.xml	(revision )
+@@ -32,6 +32,12 @@
+             <groupId>org.thymeleaf</groupId>
+             <artifactId>thymeleaf</artifactId>
+             <version>3.0.8.RELEASE</version>
++            <exclusions>
++                <exclusion>
++                    <groupId>org.slf4j</groupId>
++                    <artifactId>slf4j-api</artifactId>
++                </exclusion>
++            </exclusions>
+         </dependency>
+     </dependencies>
+ </project>
+\ No newline at end of file
+Index: parent/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- parent/pom.xml	(date 1509893613000)
++++ parent/pom.xml	(revision )
+@@ -14,7 +14,11 @@
+         <java.version>1.8</java.version>
+         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
++        <!-- Logging -->
++        <logback.version>1.2.3</logback.version>
++        <slf4j.version>1.7.25</slf4j.version>
+ 
++        <masterjava.config>/apps/masterjava/config/</masterjava.config>
+         <dependency.locations.enabled>false</dependency.locations.enabled>
+     </properties>
+ 
+@@ -57,6 +61,18 @@
+                 </executions>
+             </plugin>
+         </plugins>
++
++        <testResources>
++            <testResource>
++                <directory>${masterjava.config}</directory>
++                <includes>
++                    <include>logback-test.xml</include>
++                </includes>
++            </testResource>
++            <testResource>
++                <directory>src/test/resources</directory>
++            </testResource>
++        </testResources>
+     </build>
+ 
+     <dependencies>
+@@ -70,6 +86,20 @@
+             <artifactId>streamex</artifactId>
+             <version>0.6.6</version>
+         </dependency>
++
++        <!-- Logging with SLF4J & LogBack -->
++        <dependency>
++            <groupId>org.slf4j</groupId>
++            <artifactId>jcl-over-slf4j</artifactId>
++            <version>${slf4j.version}</version>
++            <scope>runtime</scope>
++        </dependency>
++
++        <dependency>
++            <groupId>ch.qos.logback</groupId>
++            <artifactId>logback-classic</artifactId>
++            <version>${logback.version}</version>
++        </dependency>
+ 
+         <!--Test-->
+         <dependency>
+Index: parent-web/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- parent-web/pom.xml	(date 1509893613000)
++++ parent-web/pom.xml	(revision )
+@@ -27,6 +27,19 @@
+                 </configuration>
+             </plugin>
+         </plugins>
++
++        <resources>
++            <resource>
++                <directory>${masterjava.config}</directory>
++                <filtering>true</filtering>
++                <includes>
++                    <include>logback.xml</include>
++                </includes>
++            </resource>
++            <resource>
++                <directory>src/main/resources</directory>
++            </resource>
++        </resources>
+     </build>
+ 
+     <dependencies>

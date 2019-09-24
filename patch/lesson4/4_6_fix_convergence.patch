@@ -1,0 +1,58 @@
+Index: web/upload/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/pom.xml	(date 1510518837000)
++++ web/upload/pom.xml	(revision )
+@@ -25,6 +25,12 @@
+             <groupId>com.j2html</groupId>
+             <artifactId>j2html</artifactId>
+             <version>1.2.0</version>
++            <exclusions>
++                <exclusion>
++                    <groupId>com.google.guava</groupId>
++                    <artifactId>guava</artifactId>
++                </exclusion>
++            </exclusions>
+         </dependency>
+     </dependencies>
+ 
+Index: test/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- test/pom.xml	(date 1510518837000)
++++ test/pom.xml	(revision )
+@@ -64,12 +64,12 @@
+         <dependency>
+             <groupId>org.openjdk.jmh</groupId>
+             <artifactId>jmh-core</artifactId>
+-            <version>RELEASE</version>
++            <version>1.19</version>
+         </dependency>
+         <dependency>
+             <groupId>org.openjdk.jmh</groupId>
+             <artifactId>jmh-generator-annprocess</artifactId>
+-            <version>RELEASE</version>
++            <version>1.19</version>
+             <scope>provided</scope>
+         </dependency>
+     </dependencies>
+Index: parent/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- parent/pom.xml	(date 1510518837000)
++++ parent/pom.xml	(revision )
+@@ -50,7 +50,7 @@
+         <dependency>
+             <groupId>one.util</groupId>
+             <artifactId>streamex</artifactId>
+-            <version>RELEASE</version>
++            <version>0.6.6</version>
+         </dependency>
+ 
+         <!--Test-->

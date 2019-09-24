@@ -1,0 +1,33 @@
+Index: parent/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- parent/pom.xml	(date 1490101176000)
++++ parent/pom.xml	(revision )
+@@ -14,6 +14,8 @@
+         <java.version>1.8</java.version>
+         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
++
++        <dependency.locations.enabled>false</dependency.locations.enabled>
+     </properties>
+ 
+     <build>
+Index: pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- pom.xml	(date 1490101176000)
++++ pom.xml	(revision )
+@@ -12,6 +12,9 @@
+     <url>https://github.com/JavaOPs/masterjava</url>
+ 
+     <modules>
++        <module>parent</module>
++        <module>parent-web</module>
++
+         <module>common</module>
+         <module>test</module>
+ 

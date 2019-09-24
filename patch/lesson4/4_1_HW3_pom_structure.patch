@@ -1,0 +1,535 @@
+Index: services/mail-api/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-api/pom.xml	(revision )
++++ services/mail-api/pom.xml	(revision )
+@@ -0,0 +1,26 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++
++    <parent>
++        <groupId>ru.javaops</groupId>
++        <artifactId>parent</artifactId>
++        <relativePath>../../parent/pom.xml</relativePath>
++        <version>1.0-SNAPSHOT</version>
++    </parent>
++
++    <artifactId>mail-api</artifactId>
++    <version>1.0-SNAPSHOT</version>
++    <name>Mail API</name>
++
++    <dependencies>
++        <dependency>
++            <groupId>${project.groupId}</groupId>
++            <artifactId>common</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++    </dependencies>
++
++</project>
+\ No newline at end of file
+Index: services/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/pom.xml	(revision )
++++ services/pom.xml	(revision )
+@@ -0,0 +1,15 @@
++<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++
++    <groupId>ru.javaops</groupId>
++    <artifactId>services</artifactId>
++    <packaging>pom</packaging>
++    <version>1.0-SNAPSHOT</version>
++
++    <name>Services</name>
++    <modules>
++        <module>mail-api</module>
++        <module>mail-service</module>
++    </modules>
++</project>
+Index: test/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- test/pom.xml	(revision )
++++ test/pom.xml	(revision )
+@@ -0,0 +1,76 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++
++    <parent>
++        <groupId>ru.javaops</groupId>
++        <artifactId>parent</artifactId>
++        <relativePath>../parent/pom.xml</relativePath>
++        <version>1.0-SNAPSHOT</version>
++    </parent>
++
++    <artifactId>test</artifactId>
++    <version>1.0-SNAPSHOT</version>
++    <name>Test</name>
++
++    <build>
++        <plugins>
++            <plugin>
++                <groupId>org.apache.maven.plugins</groupId>
++                <artifactId>maven-shade-plugin</artifactId>
++                <version>2.2</version>
++                <executions>
++                    <execution>
++                        <phase>package</phase>
++                        <goals>
++                            <goal>shade</goal>
++                        </goals>
++                        <configuration>
++                            <finalName>benchmarks</finalName>
++                            <transformers>
++                                <transformer
++                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
++                                    <mainClass>org.openjdk.jmh.Main</mainClass>
++                                </transformer>
++                            </transformers>
++                            <filters>
++                                <filter>
++                                    <!--
++                                        Shading signed JARs will fail without this.
++                                        http://stackoverflow.com/questions/999489/invalid-signature-file-when-attempting-to-run-a-jar
++                                    -->
++                                    <artifact>*:*</artifact>
++                                    <excludes>
++                                        <exclude>META-INF/*.SF</exclude>
++                                        <exclude>META-INF/*.DSA</exclude>
++                                        <exclude>META-INF/*.RSA</exclude>
++                                    </excludes>
++                                </filter>
++                            </filters>
++                        </configuration>
++                    </execution>
++                </executions>
++            </plugin>
++        </plugins>
++    </build>
++    <dependencies>
++        <dependency>
++            <groupId>${project.groupId}</groupId>
++            <artifactId>common</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>org.openjdk.jmh</groupId>
++            <artifactId>jmh-core</artifactId>
++            <version>RELEASE</version>
++        </dependency>
++        <dependency>
++            <groupId>org.openjdk.jmh</groupId>
++            <artifactId>jmh-generator-annprocess</artifactId>
++            <version>RELEASE</version>
++            <scope>provided</scope>
++        </dependency>
++    </dependencies>
++</project>
+\ No newline at end of file
+Index: web/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/pom.xml	(revision )
++++ web/pom.xml	(revision )
+@@ -0,0 +1,15 @@
++<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++
++    <groupId>ru.javaops</groupId>
++    <artifactId>web</artifactId>
++    <packaging>pom</packaging>
++    <version>1.0-SNAPSHOT</version>
++    <name>Web</name>
++
++    <modules>
++        <module>upload</module>
++        <module>webapp</module>
++    </modules>
++</project>
+Index: web/webapp/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/webapp/pom.xml	(revision )
++++ web/webapp/pom.xml	(revision )
+@@ -0,0 +1,30 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++
++    <parent>
++        <groupId>ru.javaops</groupId>
++        <artifactId>parent-web</artifactId>
++        <relativePath>../../parent-web/pom.xml</relativePath>
++        <version>1.0-SNAPSHOT</version>
++    </parent>
++
++    <artifactId>webapp</artifactId>
++    <version>1.0-SNAPSHOT</version>
++    <packaging>war</packaging>
++    <name>WebApp</name>
++
++    <build>
++        <finalName>webapp</finalName>
++    </build>
++
++    <dependencies>
++        <dependency>
++            <groupId>${project.groupId}</groupId>
++            <artifactId>common</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++    </dependencies>
++</project>
+\ No newline at end of file
+Index: services/mail-service/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/pom.xml	(revision )
++++ services/mail-service/pom.xml	(revision )
+@@ -0,0 +1,26 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++
++    <parent>
++        <groupId>ru.javaops</groupId>
++        <artifactId>parent-web</artifactId>
++        <relativePath>../../parent-web/pom.xml</relativePath>
++        <version>1.0-SNAPSHOT</version>
++    </parent>
++
++    <artifactId>mail-service</artifactId>
++    <version>1.0-SNAPSHOT</version>
++    <packaging>war</packaging>
++    <name>Mail Service</name>
++
++    <dependencies>
++        <dependency>
++            <groupId>${project.groupId}</groupId>
++            <artifactId>mail-api</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++    </dependencies>
++</project>
+\ No newline at end of file
+Index: web/upload/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/pom.xml	(revision )
++++ web/upload/pom.xml	(revision )
+@@ -0,0 +1,31 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++
++    <parent>
++        <groupId>ru.javaops</groupId>
++        <artifactId>parent-web</artifactId>
++        <relativePath>../../parent-web/pom.xml</relativePath>
++        <version>1.0-SNAPSHOT</version>
++    </parent>
++
++    <artifactId>upload</artifactId>
++    <version>1.0-SNAPSHOT</version>
++    <packaging>war</packaging>
++    <name>Upload</name>
++
++    <build>
++        <finalName>upload</finalName>
++    </build>
++
++    <dependencies>
++        <dependency>
++            <groupId>com.j2html</groupId>
++            <artifactId>j2html</artifactId>
++            <version>1.2.0</version>
++        </dependency>
++    </dependencies>
++
++</project>
+\ No newline at end of file
+Index: src/main/java/ru/javaops/masterjava/xml/util/JaxbMarshaller.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/JaxbMarshaller.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/util/JaxbMarshaller.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/xml/schema/Payload.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/Payload.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/schema/Payload.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/xml/schema/ObjectFactory.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/ObjectFactory.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/schema/ObjectFactory.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/xml/util/JaxbParser.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/JaxbParser.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/util/JaxbParser.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/test/java/ru/javaops/masterjava/xml/util/StaxStreamProcessorTest.java
+===================================================================
+--- src/test/java/ru/javaops/masterjava/xml/util/StaxStreamProcessorTest.java	(date 1510506709000)
++++ web/upload/src/test/java/ru/javaops/masterjava/xml/util/StaxStreamProcessorTest.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/xml/util/StaxStreamProcessor.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/StaxStreamProcessor.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/util/StaxStreamProcessor.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/xml/schema/User.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/User.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/schema/User.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/test/java/ru/javaops/masterjava/xml/util/JaxbParserTest.java
+===================================================================
+--- src/test/java/ru/javaops/masterjava/xml/util/JaxbParserTest.java	(date 1510506709000)
++++ web/upload/src/test/java/ru/javaops/masterjava/xml/util/JaxbParserTest.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/matrix/MatrixUtil.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/matrix/MatrixUtil.java	(date 1510506709000)
++++ test/src/main/java/ru/javaops/masterjava/matrix/MatrixUtil.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/xml/util/JaxbUnmarshaller.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/JaxbUnmarshaller.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/util/JaxbUnmarshaller.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/resources/cities.xsl
+===================================================================
+--- src/main/resources/cities.xsl	(date 1510506709000)
++++ web/upload/src/main/resources/cities.xsl	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/xml/util/XsltProcessor.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/XsltProcessor.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/util/XsltProcessor.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/resources/groups.xsl
+===================================================================
+--- src/main/resources/groups.xsl	(date 1510506709000)
++++ web/upload/src/main/resources/groups.xsl	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/resources/payload.xsd
+===================================================================
+--- src/main/resources/payload.xsd	(date 1510506709000)
++++ web/upload/src/main/resources/payload.xsd	(revision )
+@@ -1,0 +1,0 @@
+Index: upload/pom.xml
+===================================================================
+--- upload/pom.xml	(date 1510506709000)
++++ parent-web/pom.xml	(revision )
+@@ -11,10 +11,10 @@
+         <version>1.0-SNAPSHOT</version>
+     </parent>
+ 
+-    <artifactId>upload</artifactId>
++    <artifactId>parent-web</artifactId>
++    <packaging>pom</packaging>
+     <version>1.0-SNAPSHOT</version>
+-    <packaging>war</packaging>
+-    <name>Upload</name>
++    <name>Parent Web</name>
+ 
+     <build>
+         <plugins>
+@@ -31,9 +31,16 @@
+ 
+     <dependencies>
+         <dependency>
+-            <groupId>ru.javaops</groupId>
+-            <artifactId>common</artifactId>
+-            <version>${project.version}</version>
++            <groupId>javax.servlet</groupId>
++            <artifactId>javax.servlet-api</artifactId>
++            <version>3.1.0</version>
++            <scope>provided</scope>
+         </dependency>
+     </dependencies>
++
++    <profiles>
++    </profiles>
++
++    <dependencyManagement>
++    </dependencyManagement>
+ </project>
+\ No newline at end of file
+Index: src/test/resources/payload.xml
+===================================================================
+--- src/test/resources/payload.xml	(date 1510506709000)
++++ web/upload/src/test/resources/payload.xml	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/xml/util/Schemas.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/Schemas.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/util/Schemas.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/matrix/MainMatrix.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/matrix/MainMatrix.java	(date 1510506709000)
++++ test/src/main/java/ru/javaops/masterjava/matrix/MainMatrix.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/test/resources/city.xml
+===================================================================
+--- src/test/resources/city.xml	(date 1510506709000)
++++ web/upload/src/test/resources/city.xml	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/xml/schema/GroupType.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/GroupType.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/schema/GroupType.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/test/java/ru/javaops/masterjava/xml/util/XsltProcessorTest.java
+===================================================================
+--- src/test/java/ru/javaops/masterjava/xml/util/XsltProcessorTest.java	(date 1510506709000)
++++ web/upload/src/test/java/ru/javaops/masterjava/xml/util/XsltProcessorTest.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/xml/schema/Project.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/Project.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/schema/Project.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/test/java/ru/javaops/masterjava/MainXml.java
+===================================================================
+--- src/test/java/ru/javaops/masterjava/MainXml.java	(date 1510506709000)
++++ web/upload/src/test/java/ru/javaops/masterjava/MainXml.java	(revision )
+@@ -20,7 +20,6 @@
+ import java.nio.file.Files;
+ import java.nio.file.Paths;
+ import java.util.*;
+-import java.util.stream.Collectors;
+ 
+ import static com.google.common.base.Strings.nullToEmpty;
+ import static j2html.TagCreator.*;
+@@ -74,9 +73,7 @@
+         final Set<Project.Group> groups = new HashSet<>(project.getGroup());  // identity compare
+         return StreamEx.of(payload.getUsers().getUser())
+                 .filter(u -> !Collections.disjoint(groups, u.getGroupRefs()))
+-                .collect(
+-                        Collectors.toCollection(() -> new TreeSet<>(USER_COMPARATOR))
+-                );
++                .toCollection(() -> new TreeSet<>(USER_COMPARATOR));
+     }
+ 
+     private static Set<User> processByStax(String projectName, URL payloadUrl) throws Exception {
+Index: src/main/java/ru/javaops/masterjava/xml/schema/CityType.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/CityType.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/schema/CityType.java	(revision )
+@@ -1,13 +1,8 @@
++
+ 
+ package ru.javaops.masterjava.xml.schema;
+ 
+-import javax.xml.bind.annotation.XmlAccessType;
+-import javax.xml.bind.annotation.XmlAccessorType;
+-import javax.xml.bind.annotation.XmlAttribute;
+-import javax.xml.bind.annotation.XmlID;
+-import javax.xml.bind.annotation.XmlSchemaType;
+-import javax.xml.bind.annotation.XmlType;
+-import javax.xml.bind.annotation.XmlValue;
++import javax.xml.bind.annotation.*;
+ import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
+ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+ 
+Index: src/main/java/ru/javaops/masterjava/matrix/MatrixBenchmark.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/matrix/MatrixBenchmark.java	(date 1510506709000)
++++ test/src/main/java/ru/javaops/masterjava/matrix/MatrixBenchmark.java	(revision )
+@@ -1,0 +1,0 @@
+Index: pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- pom.xml	(date 1510506709000)
++++ pom.xml	(revision )
+@@ -8,17 +8,14 @@
+ 
+     <version>1.0-SNAPSHOT</version>
+ 
+-    <name>Master Java</name>
++    <name>Masterjava Root</name>
+     <url>https://github.com/JavaOPs/masterjava</url>
+ 
+     <modules>
+-        <module>upload</module>
+         <module>common</module>
+-<!--
+-        <module>webapp</module>
+-        <module>mail-service</module>
+-        <module>mail-api</module>
+         <module>test</module>
+--->
++
++        <module>web</module>
++        <module>services</module>
+     </modules>
+ </project>
+Index: src/main/java/ru/javaops/masterjava/service/MailService.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/service/MailService.java	(date 1510506709000)
++++ services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailServiceExecutor.java	(revision )
+@@ -1,4 +1,4 @@
+-package ru.javaops.masterjava.service;
++package ru.javaops.masterjava.service.mail;
+ 
+ import java.util.ArrayList;
+ import java.util.List;
+@@ -6,7 +6,7 @@
+ import java.util.concurrent.*;
+ import java.util.stream.Collectors;
+ 
+-public class MailService {
++public class MailServiceExecutor {
+     private static final String OK = "OK";
+ 
+     private static final String INTERRUPTED_BY_FAULTS_NUMBER = "+++ Interrupted by faults number";
+Index: src/main/java/ru/javaops/masterjava/xml/schema/FlagType.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/schema/FlagType.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/schema/FlagType.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/main/java/ru/javaops/masterjava/xml/util/XPathProcessor.java
+===================================================================
+--- src/main/java/ru/javaops/masterjava/xml/util/XPathProcessor.java	(date 1510506709000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/util/XPathProcessor.java	(revision )
+@@ -1,0 +1,0 @@
+Index: src/test/java/ru/javaops/masterjava/xml/util/XPathProcessorTest.java
+===================================================================
+--- src/test/java/ru/javaops/masterjava/xml/util/XPathProcessorTest.java	(date 1510506709000)
++++ web/upload/src/test/java/ru/javaops/masterjava/xml/util/XPathProcessorTest.java	(revision )
+@@ -1,0 +1,0 @@

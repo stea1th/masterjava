@@ -1,0 +1,341 @@
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(date 1510508700000)
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(revision )
+@@ -2,8 +2,12 @@
+ 
+ import ru.javaops.masterjava.model.User;
+ import ru.javaops.masterjava.model.UserFlag;
++import ru.javaops.masterjava.xml.schema.ObjectFactory;
++import ru.javaops.masterjava.xml.util.JaxbParser;
++import ru.javaops.masterjava.xml.util.JaxbUnmarshaller;
+ import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
+ 
++import javax.xml.bind.JAXBException;
+ import javax.xml.stream.XMLStreamException;
+ import javax.xml.stream.events.XMLEvent;
+ import java.io.InputStream;
+@@ -11,16 +15,16 @@
+ import java.util.List;
+ 
+ public class UserProcessor {
++    private static final JaxbParser jaxbParser = new JaxbParser(ObjectFactory.class);
+ 
+-    public List<User> process(final InputStream is) throws XMLStreamException {
++    public List<User> process(final InputStream is) throws XMLStreamException, JAXBException {
+         final StaxStreamProcessor processor = new StaxStreamProcessor(is);
+         List<User> users = new ArrayList<>();
+ 
++        JaxbUnmarshaller unmarshaller = jaxbParser.createUnmarshaller();
+         while (processor.doUntil(XMLEvent.START_ELEMENT, "User")) {
+-            final String email = processor.getAttribute("email");
+-            final UserFlag flag = UserFlag.valueOf(processor.getAttribute("flag"));
+-            final String fullName = processor.getReader().getElementText();
+-            final User user = new User(fullName, email, flag);
++            ru.javaops.masterjava.xml.schema.User xmlUser = unmarshaller.unmarshal(processor.getReader(), ru.javaops.masterjava.xml.schema.User.class);
++            final User user = new User(xmlUser.getValue(), xmlUser.getEmail(), UserFlag.valueOf(xmlUser.getFlag().value()));
+             users.add(user);
+         }
+         return users;
+Index: web/upload/src/main/java/ru/javaops/masterjava/xml/util/JaxbUnmarshaller.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/xml/util/JaxbUnmarshaller.java	(date 1510508700000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/util/JaxbUnmarshaller.java	(revision )
+@@ -16,23 +16,23 @@
+         unmarshaller = ctx.createUnmarshaller();
+     }
+ 
+-    public synchronized void setSchema(Schema schema) {
++    public void setSchema(Schema schema) {
+         unmarshaller.setSchema(schema);
+     }
+ 
+-    public synchronized Object unmarshal(InputStream is) throws JAXBException {
+-        return unmarshaller.unmarshal(is);
++    public <T> T unmarshal(InputStream is) throws JAXBException {
++        return (T) unmarshaller.unmarshal(is);
+     }
+ 
+-    public synchronized Object unmarshal(Reader reader) throws JAXBException {
+-        return unmarshaller.unmarshal(reader);
++    public <T> T unmarshal(Reader reader) throws JAXBException {
++        return (T) unmarshaller.unmarshal(reader);
+     }
+ 
+-    public Object unmarshal(String str) throws JAXBException {
+-        return unmarshal(new StringReader(str));
++    public <T> T unmarshal(String str) throws JAXBException {
++        return (T) unmarshal(new StringReader(str));
+     }
+ 
+-    public synchronized <T> T unmarshal(XMLStreamReader reader, Class<T> elementClass) throws JAXBException {
++    public <T> T unmarshal(XMLStreamReader reader, Class<T> elementClass) throws JAXBException {
+         return unmarshaller.unmarshal(reader, elementClass).getValue();
+     }
+ }
+\ No newline at end of file
+Index: web/upload/src/main/java/ru/javaops/masterjava/xml/util/JaxbParser.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/xml/util/JaxbParser.java	(date 1510508700000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/util/JaxbParser.java	(revision )
+@@ -4,28 +4,26 @@
+ 
+ import javax.xml.bind.JAXBContext;
+ import javax.xml.bind.JAXBException;
+-import javax.xml.bind.PropertyException;
+-import javax.xml.stream.XMLStreamReader;
+ import javax.xml.transform.stream.StreamSource;
+ import javax.xml.validation.Schema;
+-import java.io.*;
++import java.io.IOException;
++import java.io.Reader;
++import java.io.StringReader;
+ 
+ 
+ /**
+- * Marshalling/Unmarshalling JAXB helper
+- * XML Facade
++ * Marshalling/Unmarshalling JAXB facade
+  */
+ public class JaxbParser {
+ 
+-    protected JaxbMarshaller jaxbMarshaller;
+-    protected JaxbUnmarshaller jaxbUnmarshaller;
++    private JAXBContext ctx;
+     protected Schema schema;
+ 
+     public JaxbParser(Class... classesToBeBound) {
+         try {
+             init(JAXBContext.newInstance(classesToBeBound));
+         } catch (JAXBException e) {
+-            throw new IllegalArgumentException(e);
++            throw new IllegalStateException(e);
+         }
+     }
+ 
+@@ -34,53 +32,42 @@
+         try {
+             init(JAXBContext.newInstance(context));
+         } catch (JAXBException e) {
+-            throw new IllegalArgumentException(e);
++            throw new IllegalStateException(e);
+         }
+     }
+ 
+-    private void init(JAXBContext ctx) throws JAXBException {
+-        jaxbMarshaller = new JaxbMarshaller(ctx);
+-        jaxbUnmarshaller = new JaxbUnmarshaller(ctx);
++    private void init(JAXBContext ctx) {
++        this.ctx = ctx;
+     }
+ 
+-    // Unmarshaller
+-    public <T> T unmarshal(InputStream is) throws JAXBException {
+-        return (T) jaxbUnmarshaller.unmarshal(is);
+-    }
+-
+-    public <T> T unmarshal(Reader reader) throws JAXBException {
+-        return (T) jaxbUnmarshaller.unmarshal(reader);
+-    }
+-
+-    public <T> T unmarshal(String str) throws JAXBException {
+-        return (T) jaxbUnmarshaller.unmarshal(str);
+-    }
+-
+-    public <T> T unmarshal(XMLStreamReader reader, Class<T> elementClass) throws JAXBException {
+-        return jaxbUnmarshaller.unmarshal(reader, elementClass);
+-    }
+-
+-    // Marshaller
+-    public void setMarshallerProperty(String prop, Object value) {
++    //    https://stackoverflow.com/a/7400735/548473
++    public JaxbMarshaller createMarshaller() {
+         try {
+-            jaxbMarshaller.setProperty(prop, value);
+-        } catch (PropertyException e) {
+-            throw new IllegalArgumentException(e);
+-        }
+-    }
+-
+-    public String marshal(Object instance) throws JAXBException {
+-        return jaxbMarshaller.marshal(instance);
++            JaxbMarshaller marshaller = new JaxbMarshaller(ctx);
++            if (schema != null) {
++                marshaller.setSchema(schema);
++            }
++            return marshaller;
++        } catch (JAXBException e) {
++            throw new IllegalStateException(e);
++        }
+     }
+ 
+-    public void marshal(Object instance, Writer writer) throws JAXBException {
+-        jaxbMarshaller.marshal(instance, writer);
++    //    https://stackoverflow.com/a/7400735/548473
++    public JaxbUnmarshaller createUnmarshaller() {
++        try {
++            JaxbUnmarshaller unmarshaller = new JaxbUnmarshaller(ctx);
++            if (schema != null) {
++                unmarshaller.setSchema(schema);
++            }
++            return unmarshaller;
++        } catch (JAXBException e) {
++            throw new IllegalStateException(e);
++        }
+     }
+ 
+     public void setSchema(Schema schema) {
+         this.schema = schema;
+-        jaxbUnmarshaller.setSchema(schema);
+-        jaxbMarshaller.setSchema(schema);
+     }
+ 
+     public void validate(String str) throws IOException, SAXException {
+Index: web/upload/src/test/java/ru/javaops/masterjava/MainXml.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/test/java/ru/javaops/masterjava/MainXml.java	(date 1510508700000)
++++ web/upload/src/test/java/ru/javaops/masterjava/MainXml.java	(revision )
+@@ -8,10 +8,7 @@
+ import ru.javaops.masterjava.xml.schema.Payload;
+ import ru.javaops.masterjava.xml.schema.Project;
+ import ru.javaops.masterjava.xml.schema.User;
+-import ru.javaops.masterjava.xml.util.JaxbParser;
+-import ru.javaops.masterjava.xml.util.Schemas;
+-import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
+-import ru.javaops.masterjava.xml.util.XsltProcessor;
++import ru.javaops.masterjava.xml.util.*;
+ 
+ import javax.xml.stream.events.XMLEvent;
+ import java.io.InputStream;
+@@ -59,10 +56,11 @@
+ 
+     private static Set<User> parseByJaxb(String projectName, URL payloadUrl) throws Exception {
+         JaxbParser parser = new JaxbParser(ObjectFactory.class);
++        JaxbUnmarshaller unmarshaller = parser.createUnmarshaller();
+         parser.setSchema(Schemas.ofClasspath("payload.xsd"));
+         Payload payload;
+         try (InputStream is = payloadUrl.openStream()) {
+-            payload = parser.unmarshal(is);
++            payload = unmarshaller.unmarshal(is);
+         }
+ 
+         Project project = StreamEx.of(payload.getProjects().getProject())
+@@ -99,11 +97,12 @@
+             // Users loop
+             Set<User> users = new TreeSet<>(USER_COMPARATOR);
+ 
+-            JaxbParser parser = new JaxbParser(User.class);
++            JaxbParser parser = new JaxbParser(ObjectFactory.class);
++            JaxbUnmarshaller unmarshaller = parser.createUnmarshaller();
+             while (processor.doUntil(XMLEvent.START_ELEMENT, "User")) {
+                 String groupRefs = processor.getAttribute("groupRefs");
+                 if (!Collections.disjoint(groupNames, Splitter.on(' ').splitToList(nullToEmpty(groupRefs)))) {
+-                    User user = parser.unmarshal(processor.getReader(), User.class);
++                    User user = unmarshaller.unmarshal(processor.getReader(), User.class);
+                     users.add(user);
+                 }
+             }
+Index: web/upload/src/main/java/ru/javaops/masterjava/xml/util/JaxbMarshaller.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/xml/util/JaxbMarshaller.java	(date 1510508700000)
++++ web/upload/src/main/java/ru/javaops/masterjava/xml/util/JaxbMarshaller.java	(revision )
+@@ -18,11 +18,15 @@
+         marshaller.setProperty(Marshaller.JAXB_FRAGMENT, true);
+     }
+ 
+-    public void setProperty(String prop, Object value) throws PropertyException {
+-        marshaller.setProperty(prop, value);
++    public void setProperty(String prop, Object value) {
++        try {
++            marshaller.setProperty(prop, value);
++        } catch (PropertyException e) {
++            throw new IllegalArgumentException(e);
++        }
+     }
+ 
+-    public synchronized void setSchema(Schema schema) {
++    public void setSchema(Schema schema) {
+         marshaller.setSchema(schema);
+     }
+ 
+@@ -32,8 +36,7 @@
+         return sw.toString();
+     }
+ 
+-    public synchronized void marshal(Object instance, Writer writer) throws JAXBException {
++    public void marshal(Object instance, Writer writer) throws JAXBException {
+         marshaller.marshal(instance, writer);
+     }
+-
+-}
++}
+\ No newline at end of file
+Index: web/upload/src/test/java/ru/javaops/masterjava/xml/util/JaxbParserTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/test/java/ru/javaops/masterjava/xml/util/JaxbParserTest.java	(date 1510508700000)
++++ web/upload/src/test/java/ru/javaops/masterjava/xml/util/JaxbParserTest.java	(revision )
+@@ -10,31 +10,37 @@
+ import javax.xml.namespace.QName;
+ 
+ public class JaxbParserTest {
+-    private static final JaxbParser JAXB_PARSER = new JaxbParser(ObjectFactory.class);
++    //    https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
++    private static final JaxbParser jaxbParser;
++    private static final JaxbMarshaller marshaller;
++    private static final JaxbUnmarshaller unmarshaller;
+ 
+     static {
+-        JAXB_PARSER.setSchema(Schemas.ofClasspath("payload.xsd"));
++        jaxbParser = new JaxbParser(ObjectFactory.class);
++        jaxbParser.setSchema(Schemas.ofClasspath("payload.xsd"));
++        marshaller = jaxbParser.createMarshaller();
++        unmarshaller = jaxbParser.createUnmarshaller();
+     }
+ 
+     @Test
+     public void testPayload() throws Exception {
+ //        JaxbParserTest.class.getResourceAsStream("/city.xml")
+-        Payload payload = JAXB_PARSER.unmarshal(
++        Payload payload = unmarshaller.unmarshal(
+                 Resources.getResource("payload.xml").openStream());
+-        String strPayload = JAXB_PARSER.marshal(payload);
+-        JAXB_PARSER.validate(strPayload);
++        String strPayload = marshaller.marshal(payload);
++        jaxbParser.validate(strPayload);
+         System.out.println(strPayload);
+     }
+ 
+     @Test
+     public void testCity() throws Exception {
+-        JAXBElement<CityType> cityElement = JAXB_PARSER.unmarshal(
++        JAXBElement<CityType> cityElement = unmarshaller.unmarshal(
+                 Resources.getResource("city.xml").openStream());
+         CityType city = cityElement.getValue();
+         JAXBElement<CityType> cityElement2 =
+                 new JAXBElement<>(new QName("http://javaops.ru", "City"), CityType.class, city);
+-        String strCity = JAXB_PARSER.marshal(cityElement2);
+-        JAXB_PARSER.validate(strCity);
++        String strCity = marshaller.marshal(cityElement2);
++        jaxbParser.validate(strCity);
+         System.out.println(strCity);
+     }
+ }
+\ No newline at end of file

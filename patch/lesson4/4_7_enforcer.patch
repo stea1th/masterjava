@@ -1,0 +1,32 @@
+Index: parent/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- parent/pom.xml	(date 1490103087000)
++++ parent/pom.xml	(revision )
+@@ -38,6 +38,24 @@
+                     <argLine>-Dfile.encoding=UTF-8</argLine>
+                 </configuration>
+             </plugin>
++            <plugin>
++                <groupId>org.apache.maven.plugins</groupId>
++                <artifactId>maven-enforcer-plugin</artifactId>
++                <version>1.4.1</version>
++                <executions>
++                    <execution>
++                        <id>enforce</id>
++                        <configuration>
++                            <rules>
++                                <dependencyConvergence/>
++                            </rules>
++                        </configuration>
++                        <goals>
++                            <goal>enforce</goal>
++                        </goals>
++                    </execution>
++                </executions>
++            </plugin>
+         </plugins>
+     </build>
+ 
