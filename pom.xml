@@ -18,5 +18,6 @@
         <module>mail-service</module>
         <module>mail-api</module>
         <module>test</module>
+        <module>parent-web</module>
     </modules>
 </project>
