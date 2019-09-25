@@ -38,8 +38,10 @@ public class PayloadServlet extends HttpServlet {
                     User user = parser.unmarshal(processor.getReader(), User.class);
                     users.add(user);
                 }
-            } catch (XMLStreamException | JAXBException e) {
-                e.printStackTrace();
+            } catch (XMLStreamException e) {
+                req.setAttribute("message", "Problem with XML stream");
+            } catch (JAXBException e) {
+               req.setAttribute("message", "No such class was found");
             }
         }
 
