@@ -31,22 +31,31 @@ public class UploadServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         final WebContext webContext = new WebContext(req, resp, req.getServletContext(), req.getLocale());
+        String chunk = req.getParameter("chunkSize");
+        System.out.println(chunk);
 
-        try {
+//        if(chunk < 1) {
+//            //TODO
+//            System.out.println("Chunk must not be 0");
+//        } else {
+            try {
 //            http://docs.oracle.com/javaee/6/tutorial/doc/glraq.html
-            Part filePart = req.getPart("fileToUpload");
-            if (filePart.getSize() == 0) {
-                throw new IllegalStateException("Upload file have not been selected");
+                Part filePart = req.getPart("fileToUpload");
+                if (filePart.getSize() == 0) {
+                    throw new IllegalStateException("Upload file have not been selected");
+                }
+                try (InputStream is = filePart.getInputStream()) {
+                    List<User> users = userProcessor.process(is);
+                    resp.sendRedirect("/result");
+                    webContext.setVariable("users", users);
+                    engine.process("result", webContext, resp.getWriter());
+                }
+            } catch (Exception e) {
+                webContext.setVariable("exception", e);
+                engine.process("exception", webContext, resp.getWriter());
             }
-            try (InputStream is = filePart.getInputStream()) {
-                List<User> users = userProcessor.process(is);
-                resp.sendRedirect("/result");
-                webContext.setVariable("users", users);
-                engine.process("result", webContext, resp.getWriter());
-            }
-        } catch (Exception e) {
-            webContext.setVariable("exception", e);
-            engine.process("exception", webContext, resp.getWriter());
-        }
+//        }
+
+
     }
 }
