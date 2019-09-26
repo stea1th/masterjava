@@ -2,9 +2,11 @@ package ru.javaops.masterjava.persist.dao;
 
 import com.bertoncelj.jdbi.entitymapper.EntityMapperFactory;
 import org.skife.jdbi.v2.sqlobject.*;
+import org.skife.jdbi.v2.sqlobject.customizers.BatchChunkSize;
 import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapperFactory;
 import ru.javaops.masterjava.persist.model.User;
 
+import java.util.Iterator;
 import java.util.List;
 
 @RegisterMapperFactory(EntityMapperFactory.class)
@@ -34,4 +36,10 @@ public abstract class UserDao implements AbstractDao {
     @SqlUpdate("TRUNCATE users")
     @Override
     public abstract void clean();
+
+    @SqlBatch("INSERT INTO users (id, full_name, email, flag) VALUES (:id, :fullName, :email, CAST(:flag AS user_flag)) ")
+    @BatchChunkSize(1000)
+    abstract void insertAll(@BindBean Iterator<User> users);
+
+
 }

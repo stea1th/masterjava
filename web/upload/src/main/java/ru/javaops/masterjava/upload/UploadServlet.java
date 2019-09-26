@@ -40,6 +40,7 @@ public class UploadServlet extends HttpServlet {
             }
             try (InputStream is = filePart.getInputStream()) {
                 List<User> users = userProcessor.process(is);
+                resp.sendRedirect("/result");
                 webContext.setVariable("users", users);
                 engine.process("result", webContext, resp.getWriter());
             }
