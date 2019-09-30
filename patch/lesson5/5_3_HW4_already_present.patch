@@ -1,0 +1,112 @@
+Index: config_templates/sql/initDB.sql
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- config_templates/sql/initDB.sql	(date 1510586957000)
++++ config_templates/sql/initDB.sql	(date 1510587041000)
+@@ -13,3 +13,4 @@
+   flag      user_flag NOT NULL
+ );
+ 
++CREATE UNIQUE INDEX email_idx ON users (email);
+\ No newline at end of file
+Index: persist/src/main/java/ru/javaops/masterjava/persist/dao/UserDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/main/java/ru/javaops/masterjava/persist/dao/UserDao.java	(date 1510586957000)
++++ persist/src/main/java/ru/javaops/masterjava/persist/dao/UserDao.java	(date 1510587041000)
+@@ -36,6 +36,9 @@
+     @Override
+     public abstract void clean();
+ 
+-    @SqlBatch("INSERT INTO users (full_name, email, flag) VALUES (:fullName, :email, CAST(:flag AS USER_FLAG))")
+-    public abstract void insertBatch(@BindBean List<User> users, @BatchChunkSize int chunkSize);
++    //    https://habrahabr.ru/post/264281/
++    @SqlBatch("INSERT INTO users (full_name, email, flag) VALUES (:fullName, :email, CAST(:flag AS USER_FLAG))" +
++            "ON CONFLICT DO NOTHING")
++//            "ON CONFLICT (email) DO UPDATE SET full_name=:fullName, flag=CAST(:flag AS USER_FLAG)")
++    public abstract int[] insertBatch(@BindBean List<User> users, @BatchChunkSize int chunkSize);
+ }
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/UploadServlet.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/UploadServlet.java	(date 1510586957000)
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/UploadServlet.java	(date 1510587041000)
+@@ -44,11 +44,11 @@
+             } else {
+                 Part filePart = req.getPart("fileToUpload");
+                 try (InputStream is = filePart.getInputStream()) {
+-                    List<User> users = userProcessor.process(is, chunkSize);
+-                    log.info("Successfully uploaded " + users.size() + " users");
++                    List<User> alreadyPresentUsers = userProcessor.process(is, chunkSize);
++                    log.info("Already present in DB " + alreadyPresentUsers.size() + " users");
+                     final WebContext webContext =
+                             new WebContext(req, resp, req.getServletContext(), req.getLocale(),
+-                                    ImmutableMap.of("users", users));
++                                    ImmutableMap.of("users", alreadyPresentUsers));
+                     engine.process("result", webContext, resp.getWriter());
+                     return;
+                 }
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(date 1510586957000)
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(date 1510587041000)
+@@ -1,5 +1,6 @@
+ package ru.javaops.masterjava.upload;
+ 
++import one.util.streamex.IntStreamEx;
+ import ru.javaops.masterjava.persist.DBIProvider;
+ import ru.javaops.masterjava.persist.dao.UserDao;
+ import ru.javaops.masterjava.persist.model.User;
+@@ -20,6 +21,9 @@
+     private static final JaxbParser jaxbParser = new JaxbParser(ObjectFactory.class);
+     private static UserDao userDao = DBIProvider.getDao(UserDao.class);
+ 
++    /*
++     * return users, already present in DB
++     */
+     public List<User> process(final InputStream is, int chunkSize) throws XMLStreamException, JAXBException {
+         final StaxStreamProcessor processor = new StaxStreamProcessor(is);
+         List<User> users = new ArrayList<>();
+@@ -30,7 +34,10 @@
+             final User user = new User(xmlUser.getValue(), xmlUser.getEmail(), UserFlag.valueOf(xmlUser.getFlag().value()));
+             users.add(user);
+         }
+-        userDao.insertBatch(users, chunkSize);
+-        return users;
++        int[] result = userDao.insertBatch(users, chunkSize);
++        return IntStreamEx.range(0, users.size())
++                .filter(i -> result[i] == 0)
++                .mapToObj(users::get)
++                .toList();
+     }
+ }
+Index: web/upload/src/main/webapp/WEB-INF/templates/result.html
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/webapp/WEB-INF/templates/result.html	(date 1510586957000)
++++ web/upload/src/main/webapp/WEB-INF/templates/result.html	(date 1510587041000)
+@@ -1,11 +1,11 @@
+ <html xmlns:th="http://www.thymeleaf.org">
+ <head>
+     <meta charset="UTF-8">
+-    <title>Uploaded users</title>
++    <title>Already present users</title>
+ </head>
+ <body>
+ <h4><a href="">Upload XML</a></h4>
+-<h3>Uploaded users</h3>
++<h3>Already present users</h3>
+ <table border="1" cellpadding="8" cellspacing="0">
+     <thead>
+     <tr>

@@ -1,0 +1,87 @@
+Index: web/webapp/src/main/webapp/WEB-INF/templates/users.html
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/webapp/src/main/webapp/WEB-INF/templates/users.html	(revision )
++++ web/webapp/src/main/webapp/WEB-INF/templates/users.html	(revision )
+@@ -0,0 +1,27 @@
++<html xmlns:th="http://www.thymeleaf.org">
++<head>
++    <meta charset="UTF-8">
++    <title>Users</title>
++</head>
++<body>
++<table border="1" cellpadding="8" cellspacing="0">
++    <thead>
++    <tr>
++        <th>#</th>
++        <th>Full Name</th>
++        <th>Email</th>
++        <th>Flag</th>
++    </tr>
++    </thead>
++    <tbody>
++    <!--/*@thymesVar id="users" type="java.util.List<ru.javaops.masterjava.persist.model.User>"*/-->
++    <tr th:each="user,iter: ${users}">
++        <td th:text="${iter.count}"></td>
++        <td th:text="${user.fullName}"></td>
++        <td th:utext="${user.email}"></td>
++        <td th:text="${user.flag}"></td>
++    </tr>
++    </tbody>
++</table>
++</body>
++</html>
+\ No newline at end of file
+Index: web/webapp/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/webapp/pom.xml	(date 1510524168000)
++++ web/webapp/pom.xml	(revision )
+@@ -23,7 +23,7 @@
+     <dependencies>
+         <dependency>
+             <groupId>${project.groupId}</groupId>
+-            <artifactId>common</artifactId>
++            <artifactId>persist</artifactId>
+             <version>${project.version}</version>
+         </dependency>
+     </dependencies>
+Index: web/webapp/src/main/java/ru/javaops/masterjava/webapp/UsersServlet.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/webapp/src/main/java/ru/javaops/masterjava/webapp/UsersServlet.java	(revision )
++++ web/webapp/src/main/java/ru/javaops/masterjava/webapp/UsersServlet.java	(revision )
+@@ -0,0 +1,27 @@
++package ru.javaops.masterjava.webapp;
++
++import com.google.common.collect.ImmutableMap;
++import org.thymeleaf.context.WebContext;
++import ru.javaops.masterjava.persist.DBIProvider;
++import ru.javaops.masterjava.persist.dao.UserDao;
++
++import javax.servlet.ServletException;
++import javax.servlet.annotation.WebServlet;
++import javax.servlet.http.HttpServlet;
++import javax.servlet.http.HttpServletRequest;
++import javax.servlet.http.HttpServletResponse;
++import java.io.IOException;
++
++import static ru.javaops.masterjava.common.web.ThymeleafListener.engine;
++
++@WebServlet("")
++public class UsersServlet extends HttpServlet {
++    private UserDao userDao = DBIProvider.getDao(UserDao.class);
++
++    @Override
++    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
++        final WebContext webContext = new WebContext(req, resp, req.getServletContext(), req.getLocale(),
++                ImmutableMap.of("users", userDao.getWithLimit(20)));
++        engine.process("users", webContext, resp.getWriter());
++    }
++}

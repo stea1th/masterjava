@@ -1,0 +1,148 @@
+Index: common/src/main/java/ru/javaops/masterjava/config/Configs.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- common/src/main/java/ru/javaops/masterjava/config/Configs.java	(revision )
++++ common/src/main/java/ru/javaops/masterjava/config/Configs.java	(revision )
+@@ -0,0 +1,19 @@
++package ru.javaops.masterjava.config;
++
++import com.typesafe.config.Config;
++import com.typesafe.config.ConfigFactory;
++
++/**
++ * gkislin
++ * 01.11.2016
++ */
++public class Configs {
++
++    public static Config getConfig(String resource) {
++        return ConfigFactory.parseResources(resource).resolve();
++    }
++
++    public static Config getConfig(String resource, String domain) {
++        return getConfig(resource).getConfig(domain);
++    }
++}
+Index: persist/src/main/resources/persist.conf
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/main/resources/persist.conf	(revision )
++++ persist/src/main/resources/persist.conf	(revision )
+@@ -0,0 +1,7 @@
++db {
++  url = "jdbc:postgresql://localhost:5432/masterjava"
++  user = user
++  password = password
++}
++
++include required(file("/apps/masterjava/config/persist.conf"))
+Index: common/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- common/pom.xml	(date 1510604075000)
++++ common/pom.xml	(revision )
+@@ -17,5 +17,35 @@
+     <name>Common</name>
+ 
+     <dependencies>
++        <!-- Logging with SLF4J & LogBack -->
++        <dependency>
++            <groupId>org.slf4j</groupId>
++            <artifactId>jcl-over-slf4j</artifactId>
++            <version>${slf4j.version}</version>
++            <scope>runtime</scope>
++        </dependency>
++
++        <dependency>
++            <groupId>ch.qos.logback</groupId>
++            <artifactId>logback-classic</artifactId>
++            <version>${logback.version}</version>
++        </dependency>
++
++        <dependency>
++            <groupId>com.google.guava</groupId>
++            <artifactId>guava</artifactId>
++            <version>23.3-jre</version>
++        </dependency>
++        <dependency>
++            <groupId>one.util</groupId>
++            <artifactId>streamex</artifactId>
++            <version>0.6.6</version>
++        </dependency>
++        <!-- config -->
++        <dependency>
++            <groupId>com.typesafe</groupId>
++            <artifactId>config</artifactId>
++            <version>1.3.2</version>
++        </dependency>
+     </dependencies>
+ </project>
+\ No newline at end of file
+Index: parent/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- parent/pom.xml	(date 1510604075000)
++++ parent/pom.xml	(revision )
+@@ -76,31 +76,6 @@
+     </build>
+ 
+     <dependencies>
+-        <dependency>
+-            <groupId>com.google.guava</groupId>
+-            <artifactId>guava</artifactId>
+-            <version>23.3-jre</version>
+-        </dependency>
+-        <dependency>
+-            <groupId>one.util</groupId>
+-            <artifactId>streamex</artifactId>
+-            <version>0.6.6</version>
+-        </dependency>
+-
+-        <!-- Logging with SLF4J & LogBack -->
+-        <dependency>
+-            <groupId>org.slf4j</groupId>
+-            <artifactId>jcl-over-slf4j</artifactId>
+-            <version>${slf4j.version}</version>
+-            <scope>runtime</scope>
+-        </dependency>
+-
+-        <dependency>
+-            <groupId>ch.qos.logback</groupId>
+-            <artifactId>logback-classic</artifactId>
+-            <version>${logback.version}</version>
+-        </dependency>
+-
+         <!--Test-->
+         <dependency>
+             <groupId>junit</groupId>
+Index: persist/src/test/java/ru/javaops/masterjava/persist/DBITestProvider.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/test/java/ru/javaops/masterjava/persist/DBITestProvider.java	(date 1510604075000)
++++ persist/src/test/java/ru/javaops/masterjava/persist/DBITestProvider.java	(revision )
+@@ -1,10 +1,14 @@
+ package ru.javaops.masterjava.persist;
+ 
++import com.typesafe.config.Config;
++import ru.javaops.masterjava.config.Configs;
++
+ import java.sql.DriverManager;
+ 
+ public class DBITestProvider {
+     public static void initDBI() {
+-        initDBI("jdbc:postgresql://localhost:5432/masterjava", "user", "password");
++        Config db = Configs.getConfig("persist.conf","db");
++        initDBI(db.getString("url"), db.getString("user"), db.getString("password"));
+     }
+ 
+     public static void initDBI(String dbUrl, String dbUser, String dbPassword) {

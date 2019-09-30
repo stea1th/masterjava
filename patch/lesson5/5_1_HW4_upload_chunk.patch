@@ -1,0 +1,252 @@
+Index: persist/src/test/java/ru/javaops/masterjava/persist/dao/UserDaoTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/test/java/ru/javaops/masterjava/persist/dao/UserDaoTest.java	(date 1510519024000)
++++ persist/src/test/java/ru/javaops/masterjava/persist/dao/UserDaoTest.java	(revision )
+@@ -32,4 +32,11 @@
+         List<User> users = dao.getWithLimit(5);
+         Assert.assertEquals(FIST5_USERS, users);
+     }
++
++    @Test
++    public void insertBatch() throws Exception {
++        dao.clean();
++        dao.insertBatch(FIST5_USERS, 3);
++        Assert.assertEquals(5, dao.getWithLimit(100).size());
++    }
+ }
+\ No newline at end of file
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(date 1510519024000)
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(revision )
+@@ -1,5 +1,7 @@
+ package ru.javaops.masterjava.upload;
+ 
++import ru.javaops.masterjava.persist.DBIProvider;
++import ru.javaops.masterjava.persist.dao.UserDao;
+ import ru.javaops.masterjava.persist.model.User;
+ import ru.javaops.masterjava.persist.model.UserFlag;
+ import ru.javaops.masterjava.xml.schema.ObjectFactory;
+@@ -16,8 +18,9 @@
+ 
+ public class UserProcessor {
+     private static final JaxbParser jaxbParser = new JaxbParser(ObjectFactory.class);
++    private static UserDao userDao = DBIProvider.getDao(UserDao.class);
+ 
+-    public List<User> process(final InputStream is) throws XMLStreamException, JAXBException {
++    public List<User> process(final InputStream is, int chunkSize) throws XMLStreamException, JAXBException {
+         final StaxStreamProcessor processor = new StaxStreamProcessor(is);
+         List<User> users = new ArrayList<>();
+ 
+@@ -27,6 +30,7 @@
+             final User user = new User(xmlUser.getValue(), xmlUser.getEmail(), UserFlag.valueOf(xmlUser.getFlag().value()));
+             users.add(user);
+         }
++        userDao.insertBatch(users, chunkSize);
+         return users;
+     }
+ }
+Index: persist/src/main/java/ru/javaops/masterjava/persist/dao/UserDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/main/java/ru/javaops/masterjava/persist/dao/UserDao.java	(date 1510519024000)
++++ persist/src/main/java/ru/javaops/masterjava/persist/dao/UserDao.java	(revision )
+@@ -2,6 +2,7 @@
+ 
+ import com.bertoncelj.jdbi.entitymapper.EntityMapperFactory;
+ import org.skife.jdbi.v2.sqlobject.*;
++import org.skife.jdbi.v2.sqlobject.customizers.BatchChunkSize;
+ import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapperFactory;
+ import ru.javaops.masterjava.persist.model.User;
+ 
+@@ -20,11 +21,11 @@
+         return user;
+     }
+ 
+-    @SqlUpdate("INSERT INTO users (full_name, email, flag) VALUES (:fullName, :email, CAST(:flag AS user_flag)) ")
++    @SqlUpdate("INSERT INTO users (full_name, email, flag) VALUES (:fullName, :email, CAST(:flag AS USER_FLAG)) ")
+     @GetGeneratedKeys
+     abstract int insertGeneratedId(@BindBean User user);
+ 
+-    @SqlUpdate("INSERT INTO users (id, full_name, email, flag) VALUES (:id, :fullName, :email, CAST(:flag AS user_flag)) ")
++    @SqlUpdate("INSERT INTO users (id, full_name, email, flag) VALUES (:id, :fullName, :email, CAST(:flag AS USER_FLAG)) ")
+     abstract void insertWitId(@BindBean User user);
+ 
+     @SqlQuery("SELECT * FROM users ORDER BY full_name, email LIMIT :it")
+@@ -34,4 +35,7 @@
+     @SqlUpdate("TRUNCATE users")
+     @Override
+     public abstract void clean();
++
++    @SqlBatch("INSERT INTO users (full_name, email, flag) VALUES (:fullName, :email, CAST(:flag AS USER_FLAG))")
++    public abstract void insertBatch(@BindBean List<User> users, @BatchChunkSize int chunkSize);
+ }
+Index: web/upload/src/main/webapp/WEB-INF/templates/upload.html
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/webapp/WEB-INF/templates/upload.html	(date 1510519024000)
++++ web/upload/src/main/webapp/WEB-INF/templates/upload.html	(revision )
+@@ -1,12 +1,18 @@
++<html xmlns:th="http://www.thymeleaf.org">
+ <head>
+     <meta charset="UTF-8">
+     <title>Upload XML</title>
+ </head>
+ <body>
+ <form action="" method="post" enctype="multipart/form-data">
++    <!--/*@thymesVar id="message" type="java.lang.String"*/-->
++    <h2 th:if="!${message.isEmpty()}" th:text="${message}">Message</h2>
+     <h3>Select xml file to upload</h3>
+     <p>
+-        <input type="file" name="fileToUpload" id="fileToUpload"><br/>
++        <label for="chunkSize">Chunk Size:</label>
++        <!--/*@thymesVar id="chunkSize" type="java.lang.Integer"*/-->
++        <input type="number" name="chunkSize" id="chunkSize" th:value="${chunkSize}" required/><br/><br/>
++        <input type="file" name="fileToUpload" id="fileToUpload" required><br/>
+     </p>
+     <p>
+         <input type="submit" value="Upload" name="submit">
+Index: parent-web/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- parent-web/pom.xml	(date 1510519024000)
++++ parent-web/pom.xml	(revision )
+@@ -26,6 +26,47 @@
+                     <failOnMissingWebXml>false</failOnMissingWebXml>
+                 </configuration>
+             </plugin>
++
++            <!--  http://stackoverflow.com/questions/4305935/is-it-possible-to-supply-tomcat6s-context-xml-file-via-the-maven-cargo-plugin#4417945 -->
++            <plugin>
++                <groupId>org.codehaus.cargo</groupId>
++                <artifactId>cargo-maven2-plugin</artifactId>
++                <version>1.6.5</version>
++                <configuration>
++                    <container>
++                        <containerId>tomcat8x</containerId>
++                        <systemProperties>
++                            <file.encoding>UTF-8</file.encoding>
++                        </systemProperties>
++                        <dependencies>
++                            <dependency>
++                                <groupId>org.postgresql</groupId>
++                                <artifactId>postgresql</artifactId>
++                            </dependency>
++                        </dependencies>
++                    </container>
++                    <configuration>
++                        <configfiles>
++                            <configfile>
++                                <file>${masterjava.config}/context.xml</file>
++                                <todir>conf/Catalina/localhost/</todir>
++                                <tofile>context.xml.default</tofile>
++                            </configfile>
++                        </configfiles>
++                    </configuration>
++                    <deployables>
++                        <deployable>
++                            <groupId>${project.groupId}</groupId>
++                            <artifactId>${project.artifactId}</artifactId>
++                            <type>war</type>
++                            <properties>
++                                <context>${project.build.finalName}</context>
++                            </properties>
++                        </deployable>
++                    </deployables>
++                </configuration>
++            </plugin>
++
+         </plugins>
+ 
+         <resources>
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/UploadServlet.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/UploadServlet.java	(date 1510519024000)
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/UploadServlet.java	(revision )
+@@ -1,5 +1,8 @@
+ package ru.javaops.masterjava.upload;
+ 
++import com.google.common.collect.ImmutableMap;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ import org.thymeleaf.context.WebContext;
+ import ru.javaops.masterjava.persist.model.User;
+ 
+@@ -19,33 +22,48 @@
+ @WebServlet(urlPatterns = "/", loadOnStartup = 1)
+ @MultipartConfig(fileSizeThreshold = 1024 * 1024 * 10) //10 MB in memory limit
+ public class UploadServlet extends HttpServlet {
++    private static final Logger log = LoggerFactory.getLogger(UploadServlet.class);
++    private static final int CHUNK_SIZE = 2000;
+ 
+     private final UserProcessor userProcessor = new UserProcessor();
+ 
+     @Override
+     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+-        final WebContext webContext = new WebContext(req, resp, req.getServletContext(), req.getLocale());
+-        engine.process("upload", webContext, resp.getWriter());
++        out(req, resp, "", CHUNK_SIZE);
+     }
+ 
+     @Override
+     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+-        final WebContext webContext = new WebContext(req, resp, req.getServletContext(), req.getLocale());
+-
++        String message;
++        int chunkSize = CHUNK_SIZE;
+         try {
+ //            http://docs.oracle.com/javaee/6/tutorial/doc/glraq.html
+-            Part filePart = req.getPart("fileToUpload");
+-            if (filePart.getSize() == 0) {
+-                throw new IllegalStateException("Upload file have not been selected");
+-            }
+-            try (InputStream is = filePart.getInputStream()) {
+-                List<User> users = userProcessor.process(is);
+-                webContext.setVariable("users", users);
+-                engine.process("result", webContext, resp.getWriter());
++            chunkSize = Integer.parseInt(req.getParameter("chunkSize"));
++            if (chunkSize < 1) {
++                message = "Chunk Size must be > 1";
++            } else {
++                Part filePart = req.getPart("fileToUpload");
++                try (InputStream is = filePart.getInputStream()) {
++                    List<User> users = userProcessor.process(is, chunkSize);
++                    log.info("Successfully uploaded " + users.size() + " users");
++                    final WebContext webContext =
++                            new WebContext(req, resp, req.getServletContext(), req.getLocale(),
++                                    ImmutableMap.of("users", users));
++                    engine.process("result", webContext, resp.getWriter());
++                    return;
++                }
+             }
+         } catch (Exception e) {
+-            webContext.setVariable("exception", e);
+-            engine.process("exception", webContext, resp.getWriter());
++            log.info(e.getMessage(), e);
++            message = e.toString();
+         }
++        out(req, resp, message, chunkSize);
++    }
++
++    private void out(HttpServletRequest req, HttpServletResponse resp, String message, int chunkSize) throws IOException {
++        resp.setCharacterEncoding("utf-8");
++        final WebContext webContext = new WebContext(req, resp, req.getServletContext(), req.getLocale(),
++                ImmutableMap.of("message", message, "chunkSize", chunkSize));
++        engine.process("upload", webContext, resp.getWriter());
+     }
+ }

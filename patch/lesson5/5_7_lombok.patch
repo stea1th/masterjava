@@ -1,0 +1,278 @@
+Index: persist/src/main/java/ru/javaops/masterjava/persist/model/User.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/main/java/ru/javaops/masterjava/persist/model/User.java	(date 1510605063000)
++++ persist/src/main/java/ru/javaops/masterjava/persist/model/User.java	(revision )
+@@ -1,82 +1,20 @@
+ package ru.javaops.masterjava.persist.model;
+ 
+ import com.bertoncelj.jdbi.entitymapper.Column;
++import lombok.*;
+ 
+-import java.util.Objects;
+-
++@Data
++@RequiredArgsConstructor
++@EqualsAndHashCode(callSuper = true)
++@NoArgsConstructor
+ public class User extends BaseEntity {
+     @Column("full_name")
+-    private String fullName;
+-
+-    private String email;
+-
+-    private UserFlag flag;
+-
+-    public User() {
+-    }
+-
+-    public User(String fullName, String email, UserFlag flag) {
+-        this(null, fullName, email, flag);
+-    }
++    private @NonNull String fullName;
++    private @NonNull String email;
++    private @NonNull UserFlag flag;
+ 
+     public User(Integer id, String fullName, String email, UserFlag flag) {
+-        super(id);
+-        this.fullName = fullName;
+-        this.email = email;
+-        this.flag = flag;
+-    }
+-
+-    public String getFullName() {
+-        return fullName;
+-    }
+-
+-    public String getEmail() {
+-        return email;
+-    }
+-
+-    public UserFlag getFlag() {
+-        return flag;
+-    }
+-
+-    public void setId(Integer id) {
+-        this.id = id;
++        this(fullName, email, flag);
++        this.id=id;
+     }
+-
+-    public void setFullName(String fullName) {
+-        this.fullName = fullName;
+-    }
+-
+-    public void setEmail(String email) {
+-        this.email = email;
+-    }
+-
+-    public void setFlag(UserFlag flag) {
+-        this.flag = flag;
+-    }
+-
+-    @Override
+-    public boolean equals(Object o) {
+-        if (this == o) return true;
+-        if (o == null || getClass() != o.getClass()) return false;
+-        User user = (User) o;
+-        return Objects.equals(id, user.id) &&
+-                Objects.equals(fullName, user.fullName) &&
+-                Objects.equals(email, user.email) &&
+-                flag == user.flag;
+-    }
+-
+-    @Override
+-    public int hashCode() {
+-        return Objects.hash(id, fullName, email, flag);
+-    }
+-
+-    @Override
+-    public String toString() {
+-        return "User (" +
+-                "id=" + id +
+-                ", fullName='" + fullName + '\'' +
+-                ", email='" + email + '\'' +
+-                ", flag=" + flag +
+-                ')';
+-    }
+ }
+\ No newline at end of file
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(date 1510605063000)
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(revision )
+@@ -1,14 +1,14 @@
+ package ru.javaops.masterjava.upload;
+ 
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
++import lombok.AllArgsConstructor;
++import lombok.extern.slf4j.Slf4j;
++import lombok.val;
+ import ru.javaops.masterjava.persist.DBIProvider;
+ import ru.javaops.masterjava.persist.dao.UserDao;
+ import ru.javaops.masterjava.persist.model.User;
+ import ru.javaops.masterjava.persist.model.UserFlag;
+ import ru.javaops.masterjava.xml.schema.ObjectFactory;
+ import ru.javaops.masterjava.xml.util.JaxbParser;
+-import ru.javaops.masterjava.xml.util.JaxbUnmarshaller;
+ import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
+ 
+ import javax.xml.bind.JAXBException;
+@@ -24,8 +24,8 @@
+ import java.util.concurrent.Executors;
+ import java.util.concurrent.Future;
+ 
++@Slf4j
+ public class UserProcessor {
+-    private static final Logger log = LoggerFactory.getLogger(UserProcessor.class);
+     private static final int NUMBER_THREADS = 4;
+ 
+     private static final JaxbParser jaxbParser = new JaxbParser(ObjectFactory.class);
+@@ -33,15 +33,11 @@
+ 
+     private ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
+ 
++    @AllArgsConstructor
+     public static class FailedEmails {
+         public String emailsOrRange;
+         public String reason;
+ 
+-        public FailedEmails(String emailsOrRange, String reason) {
+-            this.emailsOrRange = emailsOrRange;
+-            this.reason = reason;
+-        }
+-
+         @Override
+         public String toString() {
+             return emailsOrRange + " : " + reason;
+@@ -58,8 +54,8 @@
+ 
+         int id = userDao.getSeqAndSkip(chunkSize);
+         List<User> chunk = new ArrayList<>(chunkSize);
+-        final StaxStreamProcessor processor = new StaxStreamProcessor(is);
+-        JaxbUnmarshaller unmarshaller = jaxbParser.createUnmarshaller();
++        val processor = new StaxStreamProcessor(is);
++        val unmarshaller = jaxbParser.createUnmarshaller();
+ 
+         while (processor.doUntil(XMLEvent.START_ELEMENT, "User")) {
+             ru.javaops.masterjava.xml.schema.User xmlUser = unmarshaller.unmarshal(processor.getReader(), ru.javaops.masterjava.xml.schema.User.class);
+Index: persist/src/main/java/ru/javaops/masterjava/persist/DBIProvider.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/main/java/ru/javaops/masterjava/persist/DBIProvider.java	(date 1510605063000)
++++ persist/src/main/java/ru/javaops/masterjava/persist/DBIProvider.java	(revision )
+@@ -1,18 +1,16 @@
+ package ru.javaops.masterjava.persist;
+ 
++import lombok.extern.slf4j.Slf4j;
+ import org.skife.jdbi.v2.DBI;
+ import org.skife.jdbi.v2.logging.SLF4JLog;
+ import org.skife.jdbi.v2.tweak.ConnectionFactory;
+-import org.slf4j.Logger;
+ import ru.javaops.masterjava.persist.dao.AbstractDao;
+ 
+ import javax.naming.InitialContext;
+ import javax.sql.DataSource;
+ 
+-import static org.slf4j.LoggerFactory.getLogger;
+-
++@Slf4j
+ public class DBIProvider {
+-    private static final Logger log = getLogger(DBIProvider.class);
+ 
+     private volatile static ConnectionFactory connectionFactory = null;
+ 
+Index: persist/src/main/java/ru/javaops/masterjava/persist/model/BaseEntity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/main/java/ru/javaops/masterjava/persist/model/BaseEntity.java	(date 1510605063000)
++++ persist/src/main/java/ru/javaops/masterjava/persist/model/BaseEntity.java	(revision )
+@@ -1,23 +1,16 @@
+ package ru.javaops.masterjava.persist.model;
+ 
++import lombok.*;
++
++@NoArgsConstructor
++@AllArgsConstructor
++@ToString
+ abstract public class BaseEntity {
+-    protected BaseEntity() {
+-    }
+ 
+-    protected BaseEntity(Integer id) {
+-        this.id = id;
+-    }
+-
++    @Getter
++    @Setter
+     protected Integer id;
+ 
+-    public Integer getId() {
+-        return id;
+-    }
+-
+-    protected void setId(Integer id) {
+-        this.id = id;
+-    }
+-
+     public boolean isNew() {
+         return id == null;
+     }
+Index: parent/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- parent/pom.xml	(date 1510605063000)
++++ parent/pom.xml	(revision )
+@@ -76,6 +76,13 @@
+     </build>
+ 
+     <dependencies>
++        <dependency>
++            <groupId>org.projectlombok</groupId>
++            <artifactId>lombok</artifactId>
++            <version>1.16.18</version>
++            <scope>provided</scope>
++        </dependency>
++
+         <!--Test-->
+         <dependency>
+             <groupId>junit</groupId>
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/UploadServlet.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/UploadServlet.java	(date 1510605063000)
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/UploadServlet.java	(revision )
+@@ -1,8 +1,7 @@
+ package ru.javaops.masterjava.upload;
+ 
+ import com.google.common.collect.ImmutableMap;
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
++import lombok.extern.slf4j.Slf4j;
+ import org.thymeleaf.context.WebContext;
+ 
+ import javax.servlet.ServletException;
+@@ -20,8 +19,8 @@
+ 
+ @WebServlet(urlPatterns = "/", loadOnStartup = 1)
+ @MultipartConfig(fileSizeThreshold = 1024 * 1024 * 10) //10 MB in memory limit
++@Slf4j
+ public class UploadServlet extends HttpServlet {
+-    private static final Logger log = LoggerFactory.getLogger(UploadServlet.class);
+     private static final int CHUNK_SIZE = 2000;
+ 
+     private final UserProcessor userProcessor = new UserProcessor();
