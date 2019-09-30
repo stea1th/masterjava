@@ -14,7 +14,6 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class UserProcessor {
@@ -27,7 +26,6 @@ public class UserProcessor {
     public void process(final InputStream is, int chunk) throws XMLStreamException, JAXBException {
         final StaxStreamProcessor processor = new StaxStreamProcessor(is);
         UserDao userDao = DBIProvider.getDao(UserDao.class);
-        List<List<User>> chunks = new ArrayList<>();
         List<User> users = new ArrayList<>();
 
 
@@ -39,16 +37,13 @@ public class UserProcessor {
             users.add(user);
             count++;
             if(count == chunk) {
-                List<User> userList = new ArrayList<>();
-                Collections.copy(userList, users);
-                System.out.println(userList.size());
-                chunks.add(userList);
+                int[] x = userDao.insertAll(users.iterator(), chunk);
                 users.clear();
                 count = 0;
             }
         }
         if(users.size() != 0) {
-            chunks.add(users);
+            int[] x = userDao.insertAll(users.iterator(), chunk);
         }
     }
 }

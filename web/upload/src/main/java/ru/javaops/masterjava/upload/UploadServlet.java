@@ -1,9 +1,6 @@
 package ru.javaops.masterjava.upload;
 
 import org.thymeleaf.context.WebContext;
-import ru.javaops.masterjava.persist.DBIProvider;
-import ru.javaops.masterjava.persist.dao.UserDao;
-import ru.javaops.masterjava.persist.model.User;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -15,7 +12,6 @@ import javax.servlet.http.Part;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.List;
 
 import static ru.javaops.masterjava.common.web.ThymeleafListener.engine;
 
@@ -47,11 +43,8 @@ public class UploadServlet extends HttpServlet {
                     throw new IllegalStateException("Upload file have not been selected");
                 }
                 try (InputStream is = filePart.getInputStream()) {
-                    List<List<User>> chunks = userProcessor.process(is, chunk);
+                    userProcessor.process(is, chunk);
 
-//                    chunks.forEach(c-> {
-//                        userDao.insertAll(c.iterator());
-//                    });
                     webContext.setVariable("users", new ArrayList<>());
                     engine.process("result", webContext, resp.getWriter());
                 }
