@@ -9,7 +9,7 @@ import java.util.Objects;
 
 public class User extends BaseEntity {
 
-    public static final int USER_SEQ = 100000;
+    private static final int USER_SEQ = 100000;
 
 
     @Column("full_name")
