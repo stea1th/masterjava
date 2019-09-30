@@ -22,6 +22,6 @@ public class ViewServlet extends HttpServlet {
         final WebContext webContext = new WebContext(req, resp, req.getServletContext(), req.getLocale());
         List<User> users = new ArrayList<>();
         webContext.setVariable("users", users);
-        engine.process("result", webContext, resp.getWriter());
+        engine.process("users", webContext, resp.getWriter());
     }
 }

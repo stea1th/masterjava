@@ -1,6 +1,9 @@
 package ru.javaops.masterjava.persist.model;
 
 abstract public class BaseEntity {
+
+
+
     protected BaseEntity() {
     }
 

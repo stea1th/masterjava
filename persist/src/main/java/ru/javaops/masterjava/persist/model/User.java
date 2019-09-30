@@ -2,9 +2,16 @@ package ru.javaops.masterjava.persist.model;
 
 import com.bertoncelj.jdbi.entitymapper.Column;
 
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.SequenceGenerator;
 import java.util.Objects;
 
 public class User extends BaseEntity {
+
+    public static final int USER_SEQ = 100000;
+
+
     @Column("full_name")
     private String fullName;
 
@@ -38,6 +45,10 @@ public class User extends BaseEntity {
         return flag;
     }
 
+    @SequenceGenerator(name = "user_seq", sequenceName = "user_seq",
+            allocationSize = 1, initialValue = USER_SEQ)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,
+            generator = "user_seq")
     public void setId(Integer id) {
         this.id = id;
     }

@@ -13,3 +13,5 @@ CREATE TABLE users (
   flag      user_flag NOT NULL
 );
 
+ALTER TABLE users ADD CONSTRAINT email_unique UNIQUE(email);
+
