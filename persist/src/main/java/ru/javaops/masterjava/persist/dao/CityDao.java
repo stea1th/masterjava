@@ -9,7 +9,7 @@ import ru.javaops.masterjava.persist.model.City;
 @RegisterMapperFactory(EntityMapperFactory.class)
 public abstract class CityDao implements AbstractDao  {
 
-    @SqlUpdate("INSERT INTO city (id, name) VALUES (:id, :name) ")
-    abstract int insertGeneratedId(@BindBean City city);
+    @SqlUpdate("INSERT INTO city (id, name) VALUES (:id, :name) ON CONFLICT DO NOTHING ")
+    public abstract int insert(@BindBean City city);
 
 }

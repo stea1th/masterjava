@@ -11,6 +11,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
+import javax.xml.bind.JAXBException;
+import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -24,6 +26,7 @@ public class UploadServlet extends HttpServlet {
     private static final int CHUNK_SIZE = 2000;
 
     private final UserProcessor userProcessor = new UserProcessor();
+    private final CityProcessor cityProcessor = new CityProcessor();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -41,6 +44,7 @@ public class UploadServlet extends HttpServlet {
                 message = "Chunk Size must be > 1";
             } else {
                 Part filePart = req.getPart("fileToUpload");
+                cityImport(filePart);
                 try (InputStream is = filePart.getInputStream()) {
                     List<UserProcessor.FailedEmails> failed = userProcessor.process(is, chunkSize);
                     log.info("Failed users: " + failed);
@@ -63,5 +67,11 @@ public class UploadServlet extends HttpServlet {
         final WebContext webContext = new WebContext(req, resp, req.getServletContext(), req.getLocale(),
                 ImmutableMap.of("message", message, "chunkSize", chunkSize));
         engine.process("upload", webContext, resp.getWriter());
+    }
+
+    private void cityImport(Part filePart) throws IOException, JAXBException, XMLStreamException {
+        try (InputStream is = filePart.getInputStream()) {
+            cityProcessor.process(is);
+        }
     }
 }

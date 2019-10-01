@@ -3,6 +3,7 @@ DROP TABLE IF EXISTS projects;
 DROP TABLE IF EXISTS groups;
 DROP TABLE IF EXISTS city;
 DROP SEQUENCE IF EXISTS user_seq;
+DROP SEQUENCE IF EXISTS global_seq;
 DROP TYPE IF EXISTS user_flag;
 DROP TYPE IF EXISTS group_type;
 
@@ -13,6 +14,8 @@ CREATE TYPE group_type AS ENUM ('FINISHED', 'CURRENT', 'REGISTERING');
 
 CREATE SEQUENCE user_seq START 100000;
 
+CREATE SEQUENCE global_seq START 100000;
+
 CREATE TABLE city
 (
     id   CHAR(4) NOT NULL PRIMARY KEY,
@@ -21,14 +24,14 @@ CREATE TABLE city
 
 CREATE TABLE groups
 (
-    id   INTEGER PRIMARY KEY DEFAULT nextval('user_seq'),
+    id   INTEGER PRIMARY KEY DEFAULT nextval('global_seq'),
     name TEXT       NOT NULL,
     type group_type NOT NULL
 );
 
 CREATE TABLE projects
 (
-    id          INTEGER PRIMARY KEY DEFAULT nextval('user_seq'),
+    id          INTEGER PRIMARY KEY DEFAULT nextval('global_seq'),
     name        TEXT    NOT NULL,
     description TEXT    NOT NULL,
     group_id    INTEGER NOT NULL,
