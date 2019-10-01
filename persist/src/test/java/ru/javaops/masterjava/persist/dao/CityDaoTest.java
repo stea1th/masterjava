@@ -7,7 +7,7 @@ import ru.javaops.masterjava.persist.CityTestData;
 import ru.javaops.masterjava.persist.UserTestData;
 import ru.javaops.masterjava.persist.model.City;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class CityDaoTest extends AbstractDaoTest<CityDao> {
 
