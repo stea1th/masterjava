@@ -1,0 +1,145 @@
+Index: services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/MailService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/MailService.java	(revision )
++++ services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/MailService.java	(revision )
+@@ -0,0 +1,21 @@
++package ru.javaops.masterjava.service.mail;
++
++import javax.jws.WebMethod;
++import javax.jws.WebParam;
++import javax.jws.WebService;
++import java.util.List;
++
++/**
++ * gkislin
++ * 15.11.2016
++ */
++@WebService
++public interface MailService {
++
++    @WebMethod
++    void sendMail(
++            @WebParam(name = "to") List<Addressee> to,
++            @WebParam(name = "cc") List<Addressee> cc,
++            @WebParam(name = "subject") String subject,
++            @WebParam(name = "body") String body);
++}
+\ No newline at end of file
+Index: services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServiceClient.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServiceClient.java	(revision )
++++ services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServiceClient.java	(revision )
+@@ -0,0 +1,20 @@
++package ru.javaops.masterjava.service.mail;
++
++import com.google.common.collect.ImmutableList;
++
++import javax.xml.namespace.QName;
++import javax.xml.ws.Service;
++import java.net.MalformedURLException;
++import java.net.URL;
++
++public class MailServiceClient {
++
++    public static void main(String[] args) throws MalformedURLException {
++        Service service = Service.create(
++                new URL("http://localhost:8080/mail/mailService?wsdl"),
++                new QName("http://mail.service.masterjava.javaops.ru/", "MailServiceImplService"));
++
++        MailService mailService = service.getPort(MailService.class);
++        mailService.sendMail(ImmutableList.of(new Addressee("masterjava@javaops.ru", null)), null, "Subject", "Body");
++    }
++}
+Index: services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServicePublisher.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServicePublisher.java	(revision )
++++ services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServicePublisher.java	(revision )
+@@ -0,0 +1,14 @@
++package ru.javaops.masterjava.service.mail;
++
++import javax.xml.ws.Endpoint;
++
++/**
++ * User: gkislin
++ * Date: 28.05.2014
++ */
++public class MailServicePublisher {
++
++    public static void main(String[] args) {
++        Endpoint.publish("http://localhost:8080/mail/mailService", new MailServiceImpl());
++    }
++}
+Index: services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailSender.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailSender.java	(revision )
++++ services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailSender.java	(revision )
+@@ -0,0 +1,12 @@
++package ru.javaops.masterjava.service.mail;
++
++import lombok.extern.slf4j.Slf4j;
++
++import java.util.List;
++
++@Slf4j
++public class MailSender {
++    static void sendMail(List<Addressee> to, List<Addressee> cc, String subject, String body) {
++        log.info("Send mail to \'" + to + "\' cc \'" + cc + "\' subject \'" + subject + (log.isDebugEnabled() ? "\nbody=" + body : ""));
++    }
++}
+Index: services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/Addressee.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/Addressee.java	(revision )
++++ services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/Addressee.java	(revision )
+@@ -0,0 +1,17 @@
++package ru.javaops.masterjava.service.mail;
++
++import lombok.AllArgsConstructor;
++import lombok.Data;
++import lombok.NoArgsConstructor;
++
++/**
++ * gkislin
++ * 15.11.2016
++ */
++@Data
++@AllArgsConstructor
++@NoArgsConstructor
++public class Addressee {
++    private String email;
++    private String name;
++}
+Index: services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailServiceImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailServiceImpl.java	(revision )
++++ services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailServiceImpl.java	(revision )
+@@ -0,0 +1,11 @@
++package ru.javaops.masterjava.service.mail;
++
++import javax.jws.WebService;
++import java.util.List;
++
++@WebService(endpointInterface = "ru.javaops.masterjava.service.mail.MailService")
++public class MailServiceImpl implements MailService {
++    public void sendMail(List<Addressee> to, List<Addressee> cc, String subject, String body) {
++        MailSender.sendMail(to, cc, subject, body);
++    }
++}
+\ No newline at end of file

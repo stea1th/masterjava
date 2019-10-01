@@ -1,0 +1,123 @@
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/PayloadProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/PayloadProcessor.java	(revision )
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/PayloadProcessor.java	(revision )
+@@ -0,0 +1,30 @@
++package ru.javaops.masterjava.upload;
++
++import lombok.AllArgsConstructor;
++import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
++
++import javax.xml.bind.JAXBException;
++import javax.xml.stream.XMLStreamException;
++import java.io.InputStream;
++import java.util.List;
++
++public class PayloadProcessor {
++    private final UserProcessor userProcessor = new UserProcessor();
++
++    @AllArgsConstructor
++    public static class FailedEmails {
++        public String emailsOrRange;
++        public String reason;
++
++        @Override
++        public String toString() {
++            return emailsOrRange + " : " + reason;
++        }
++    }
++
++
++    public List<FailedEmails> process(InputStream is, int chunkSize) throws XMLStreamException, JAXBException {
++        final StaxStreamProcessor processor = new StaxStreamProcessor(is);
++        return userProcessor.process(processor, chunkSize);
++    }
++}
+\ No newline at end of file
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(date 1511206086000)
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(revision )
+@@ -1,12 +1,12 @@
+ package ru.javaops.masterjava.upload;
+ 
+-import lombok.AllArgsConstructor;
+ import lombok.extern.slf4j.Slf4j;
+ import lombok.val;
+ import ru.javaops.masterjava.persist.DBIProvider;
+ import ru.javaops.masterjava.persist.dao.UserDao;
+ import ru.javaops.masterjava.persist.model.User;
+ import ru.javaops.masterjava.persist.model.type.UserFlag;
++import ru.javaops.masterjava.upload.PayloadProcessor.FailedEmails;
+ import ru.javaops.masterjava.xml.schema.ObjectFactory;
+ import ru.javaops.masterjava.xml.util.JaxbParser;
+ import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
+@@ -14,7 +14,6 @@
+ import javax.xml.bind.JAXBException;
+ import javax.xml.stream.XMLStreamException;
+ import javax.xml.stream.events.XMLEvent;
+-import java.io.InputStream;
+ import java.util.ArrayList;
+ import java.util.LinkedHashMap;
+ import java.util.List;
+@@ -33,28 +32,16 @@
+ 
+     private ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
+ 
+-    @AllArgsConstructor
+-    public static class FailedEmails {
+-        public String emailsOrRange;
+-        public String reason;
+-
+-        @Override
+-        public String toString() {
+-            return emailsOrRange + " : " + reason;
+-        }
+-    }
+-
+     /*
+      * return failed users chunks
+      */
+-    public List<FailedEmails> process(final InputStream is, int chunkSize) throws XMLStreamException, JAXBException {
++    public List<FailedEmails> process(final StaxStreamProcessor processor, int chunkSize) throws XMLStreamException, JAXBException {
+         log.info("Start processing with chunkSize=" + chunkSize);
+ 
+         Map<String, Future<List<String>>> chunkFutures = new LinkedHashMap<>();  // ordered map (emailRange -> chunk future)
+ 
+         int id = userDao.getSeqAndSkip(chunkSize);
+         List<User> chunk = new ArrayList<>(chunkSize);
+-        val processor = new StaxStreamProcessor(is);
+         val unmarshaller = jaxbParser.createUnmarshaller();
+ 
+         while (processor.doUntil(XMLEvent.START_ELEMENT, "User")) {
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/UploadServlet.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/UploadServlet.java	(date 1511206086000)
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/UploadServlet.java	(revision )
+@@ -23,7 +23,7 @@
+ public class UploadServlet extends HttpServlet {
+     private static final int CHUNK_SIZE = 2000;
+ 
+-    private final UserProcessor userProcessor = new UserProcessor();
++    private final PayloadProcessor payloadProcessor = new PayloadProcessor();
+ 
+     @Override
+     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+@@ -42,7 +42,7 @@
+             } else {
+                 Part filePart = req.getPart("fileToUpload");
+                 try (InputStream is = filePart.getInputStream()) {
+-                    List<UserProcessor.FailedEmails> failed = userProcessor.process(is, chunkSize);
++                    List<PayloadProcessor.FailedEmails> failed = payloadProcessor.process(is, chunkSize);
+                     log.info("Failed users: " + failed);
+                     final WebContext webContext =
+                             new WebContext(req, resp, req.getServletContext(), req.getLocale(),

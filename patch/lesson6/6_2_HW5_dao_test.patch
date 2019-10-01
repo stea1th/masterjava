@@ -1,0 +1,633 @@
+Index: persist/src/main/java/ru/javaops/masterjava/persist/dao/UserGroupDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/main/java/ru/javaops/masterjava/persist/dao/UserGroupDao.java	(revision )
++++ persist/src/main/java/ru/javaops/masterjava/persist/dao/UserGroupDao.java	(revision )
+@@ -0,0 +1,32 @@
++package ru.javaops.masterjava.persist.dao;
++
++import com.bertoncelj.jdbi.entitymapper.EntityMapperFactory;
++import one.util.streamex.StreamEx;
++import org.skife.jdbi.v2.sqlobject.*;
++import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapperFactory;
++import ru.javaops.masterjava.persist.model.UserGroup;
++
++import java.util.List;
++import java.util.Set;
++
++@RegisterMapperFactory(EntityMapperFactory.class)
++public abstract class UserGroupDao implements AbstractDao {
++
++    @SqlUpdate("TRUNCATE user_group CASCADE")
++    @Override
++    public abstract void clean();
++
++    @SqlBatch("INSERT INTO user_group (user_id, group_id) VALUES (:userId, :groupId)")
++    public abstract void insertBatch(@BindBean List<UserGroup> userGroups);
++
++    @SqlQuery("SELECT user_id FROM user_group WHERE group_id=:it")
++    public abstract Set<Integer> getUserIds(@Bind int groupId);
++
++    public static List<UserGroup> toUserGroups(int userId, Integer... groupIds) {
++        return StreamEx.of(groupIds).map(groupId -> new UserGroup(userId, groupId)).toList();
++    }
++
++    public static Set<Integer> getByGroupId(int groupId, List<UserGroup> userGroups) {
++        return StreamEx.of(userGroups).filter(ug -> ug.getGroupId() == groupId).map(UserGroup::getUserId).toSet();
++    }
++}
+\ No newline at end of file
+Index: persist/src/test/java/ru/javaops/masterjava/persist/dao/ProjectDaoTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/test/java/ru/javaops/masterjava/persist/dao/ProjectDaoTest.java	(revision )
++++ persist/src/test/java/ru/javaops/masterjava/persist/dao/ProjectDaoTest.java	(revision )
+@@ -0,0 +1,36 @@
++package ru.javaops.masterjava.persist.dao;
++
++import org.junit.Before;
++import org.junit.BeforeClass;
++import org.junit.Test;
++import ru.javaops.masterjava.persist.ProjectTestData;
++import ru.javaops.masterjava.persist.model.Project;
++
++import java.util.Map;
++
++import static org.junit.Assert.assertEquals;
++import static ru.javaops.masterjava.persist.ProjectTestData.PROJECTS;
++
++public class ProjectDaoTest extends AbstractDaoTest<ProjectDao> {
++
++    public ProjectDaoTest() {
++        super(ProjectDao.class);
++    }
++
++    @BeforeClass
++    public static void init() throws Exception {
++        ProjectTestData.init();
++    }
++
++    @Before
++    public void setUp() throws Exception {
++        ProjectTestData.setUp();
++    }
++
++    @Test
++    public void getAll() throws Exception {
++        final Map<String, Project> projects = dao.getAsMap();
++        assertEquals(PROJECTS, projects);
++        System.out.println(projects.values());
++    }
++}
+\ No newline at end of file
+Index: persist/src/main/java/ru/javaops/masterjava/persist/dao/CityDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/main/java/ru/javaops/masterjava/persist/dao/CityDao.java	(revision )
++++ persist/src/main/java/ru/javaops/masterjava/persist/dao/CityDao.java	(revision )
+@@ -0,0 +1,37 @@
++package ru.javaops.masterjava.persist.dao;
++
++import com.bertoncelj.jdbi.entitymapper.EntityMapperFactory;
++import one.util.streamex.StreamEx;
++import org.skife.jdbi.v2.sqlobject.BindBean;
++import org.skife.jdbi.v2.sqlobject.SqlBatch;
++import org.skife.jdbi.v2.sqlobject.SqlQuery;
++import org.skife.jdbi.v2.sqlobject.SqlUpdate;
++import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapperFactory;
++import ru.javaops.masterjava.persist.model.City;
++
++import java.util.Collection;
++import java.util.List;
++import java.util.Map;
++
++import static java.util.function.Function.identity;
++
++@RegisterMapperFactory(EntityMapperFactory.class)
++public abstract class CityDao implements AbstractDao {
++
++    @SqlUpdate("TRUNCATE city CASCADE ")
++    @Override
++    public abstract void clean();
++
++    @SqlQuery("SELECT * FROM city")
++    public abstract List<City> getAll();
++
++    public Map<String, City> getAsMap() {
++        return StreamEx.of(getAll()).toMap(City::getRef, identity());
++    }
++
++    @SqlUpdate("INSERT INTO city (ref, name) VALUES (:ref, :name)")
++    public abstract void insert(@BindBean City city);
++
++    @SqlBatch("INSERT INTO city (ref, name) VALUES (:ref, :name)")
++    public abstract void insertBatch(@BindBean Collection<City> cities);
++}
+Index: persist/src/test/java/ru/javaops/masterjava/persist/GroupTestData.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/test/java/ru/javaops/masterjava/persist/GroupTestData.java	(revision )
++++ persist/src/test/java/ru/javaops/masterjava/persist/GroupTestData.java	(revision )
+@@ -0,0 +1,53 @@
++package ru.javaops.masterjava.persist;
++
++import com.google.common.collect.ImmutableMap;
++import ru.javaops.masterjava.persist.dao.GroupDao;
++import ru.javaops.masterjava.persist.model.Group;
++
++import java.util.Map;
++
++import static ru.javaops.masterjava.persist.ProjectTestData.MASTERJAVA_ID;
++import static ru.javaops.masterjava.persist.ProjectTestData.TOPJAVA_ID;
++import static ru.javaops.masterjava.persist.model.type.GroupType.CURRENT;
++import static ru.javaops.masterjava.persist.model.type.GroupType.FINISHED;
++
++public class GroupTestData {
++    public static Group TOPJAVA_06;
++    public static Group TOPJAVA_07;
++    public static Group TOPJAVA_08;
++    public static Group MASTERJAVA_01;
++    public static Map<String, Group> GROUPS;
++
++    public static int TOPJAVA_06_ID;
++    public static int TOPJAVA_07_ID;
++    public static int TOPJAVA_08_ID;
++    public static int MASTERJAVA_01_ID;
++
++
++    public static void init() {
++        ProjectTestData.init();
++        ProjectTestData.setUp();
++
++        TOPJAVA_06 = new Group("topjava06", FINISHED, TOPJAVA_ID);
++        TOPJAVA_07 = new Group("topjava07", FINISHED, TOPJAVA_ID);
++        TOPJAVA_08 = new Group("topjava08", CURRENT, TOPJAVA_ID);
++        MASTERJAVA_01 = new Group("masterjava01", CURRENT, MASTERJAVA_ID);
++        GROUPS = ImmutableMap.of(
++                TOPJAVA_06.getName(), TOPJAVA_06,
++                TOPJAVA_07.getName(), TOPJAVA_07,
++                TOPJAVA_08.getName(), TOPJAVA_08,
++                MASTERJAVA_01.getName(), MASTERJAVA_01);
++    }
++
++    public static void setUp() {
++        GroupDao dao = DBIProvider.getDao(GroupDao.class);
++        dao.clean();
++        DBIProvider.getDBI().useTransaction((conn, status) -> {
++            GROUPS.values().forEach(dao::insert);
++        });
++        TOPJAVA_06_ID = TOPJAVA_06.getId();
++        TOPJAVA_07_ID = TOPJAVA_07.getId();
++        TOPJAVA_08_ID = TOPJAVA_08.getId();
++        MASTERJAVA_01_ID = MASTERJAVA_01.getId();
++    }
++}
+Index: persist/src/test/java/ru/javaops/masterjava/persist/dao/CityDaoTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/test/java/ru/javaops/masterjava/persist/dao/CityDaoTest.java	(revision )
++++ persist/src/test/java/ru/javaops/masterjava/persist/dao/CityDaoTest.java	(revision )
+@@ -0,0 +1,36 @@
++package ru.javaops.masterjava.persist.dao;
++
++import org.junit.Before;
++import org.junit.BeforeClass;
++import org.junit.Test;
++import ru.javaops.masterjava.persist.CityTestData;
++import ru.javaops.masterjava.persist.model.City;
++
++import java.util.Map;
++
++import static org.junit.Assert.assertEquals;
++import static ru.javaops.masterjava.persist.CityTestData.CITIES;
++
++public class CityDaoTest extends AbstractDaoTest<CityDao> {
++
++    public CityDaoTest() {
++        super(CityDao.class);
++    }
++
++    @BeforeClass
++    public static void init() throws Exception {
++        CityTestData.init();
++    }
++
++    @Before
++    public void setUp() throws Exception {
++        CityTestData.setUp();
++    }
++
++    @Test
++    public void getAll() throws Exception {
++        final Map<String, City> cities = dao.getAsMap();
++        assertEquals(CITIES, cities);
++        System.out.println(cities.values());
++    }
++}
+\ No newline at end of file
+Index: persist/src/test/java/ru/javaops/masterjava/persist/CityTestData.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/test/java/ru/javaops/masterjava/persist/CityTestData.java	(revision )
++++ persist/src/test/java/ru/javaops/masterjava/persist/CityTestData.java	(revision )
+@@ -0,0 +1,36 @@
++package ru.javaops.masterjava.persist;
++
++import com.google.common.collect.ImmutableMap;
++import ru.javaops.masterjava.persist.dao.CityDao;
++import ru.javaops.masterjava.persist.model.City;
++
++import java.util.Map;
++
++public class CityTestData {
++    public static City KIEV;
++    public static City MINSK;
++    public static City MOSCOW;
++    public static City SPB;
++
++    public static Map<String, City> CITIES;
++
++    public static void init() {
++        KIEV = new City("kiv", "Киев");
++        MINSK = new City("mnsk", "Минск");
++        MOSCOW = new City("mow", "Москва");
++        SPB = new City("spb", "Санкт-Петербург");
++        CITIES = ImmutableMap.of(
++                KIEV.getRef(), KIEV,
++                MINSK.getRef(), MINSK,
++                MOSCOW.getRef(), MOSCOW,
++                SPB.getRef(), SPB);
++    }
++
++    public static void setUp() {
++        CityDao dao = DBIProvider.getDao(CityDao.class);
++        dao.clean();
++        DBIProvider.getDBI().useTransaction((conn, status) -> {
++            CITIES.values().forEach(dao::insert);
++        });
++    }
++}
+Index: persist/src/test/java/ru/javaops/masterjava/persist/dao/GroupDaoTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/test/java/ru/javaops/masterjava/persist/dao/GroupDaoTest.java	(revision )
++++ persist/src/test/java/ru/javaops/masterjava/persist/dao/GroupDaoTest.java	(revision )
+@@ -0,0 +1,36 @@
++package ru.javaops.masterjava.persist.dao;
++
++import org.junit.Before;
++import org.junit.BeforeClass;
++import org.junit.Test;
++import ru.javaops.masterjava.persist.GroupTestData;
++import ru.javaops.masterjava.persist.model.Group;
++
++import java.util.Map;
++
++import static org.junit.Assert.assertEquals;
++import static ru.javaops.masterjava.persist.GroupTestData.GROUPS;
++
++public class GroupDaoTest extends AbstractDaoTest<GroupDao> {
++
++    public GroupDaoTest() {
++        super(GroupDao.class);
++    }
++
++    @BeforeClass
++    public static void init() throws Exception {
++        GroupTestData.init();
++    }
++
++    @Before
++    public void setUp() throws Exception {
++        GroupTestData.setUp();
++    }
++
++    @Test
++    public void getAll() throws Exception {
++        final Map<String, Group> projects = dao.getAsMap();
++        assertEquals(GROUPS, projects);
++        System.out.println(projects.values());
++    }
++}
+\ No newline at end of file
+Index: persist/src/main/java/ru/javaops/masterjava/persist/dao/ProjectDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/main/java/ru/javaops/masterjava/persist/dao/ProjectDao.java	(revision )
++++ persist/src/main/java/ru/javaops/masterjava/persist/dao/ProjectDao.java	(revision )
+@@ -0,0 +1,37 @@
++package ru.javaops.masterjava.persist.dao;
++
++import com.bertoncelj.jdbi.entitymapper.EntityMapperFactory;
++import one.util.streamex.StreamEx;
++import org.skife.jdbi.v2.sqlobject.BindBean;
++import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
++import org.skife.jdbi.v2.sqlobject.SqlQuery;
++import org.skife.jdbi.v2.sqlobject.SqlUpdate;
++import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapperFactory;
++import ru.javaops.masterjava.persist.model.Project;
++
++import java.util.List;
++import java.util.Map;
++
++@RegisterMapperFactory(EntityMapperFactory.class)
++public abstract class ProjectDao implements AbstractDao {
++
++    @SqlUpdate("TRUNCATE project CASCADE ")
++    @Override
++    public abstract void clean();
++
++    @SqlQuery("SELECT * FROM project ORDER BY name")
++    public abstract List<Project> getAll();
++
++    public Map<String, Project> getAsMap() {
++        return StreamEx.of(getAll()).toMap(Project::getName, g -> g);
++    }
++
++    @SqlUpdate("INSERT INTO project (name, description)  VALUES (:name, :description)")
++    @GetGeneratedKeys
++    public abstract int insertGeneratedId(@BindBean Project project);
++
++    public void insert(Project project) {
++        int id = insertGeneratedId(project);
++        project.setId(id);
++    }
++}
+Index: persist/src/test/java/ru/javaops/masterjava/persist/UserGroupTestData.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/test/java/ru/javaops/masterjava/persist/UserGroupTestData.java	(revision )
++++ persist/src/test/java/ru/javaops/masterjava/persist/UserGroupTestData.java	(revision )
+@@ -0,0 +1,41 @@
++package ru.javaops.masterjava.persist;
++
++import ru.javaops.masterjava.persist.dao.UserGroupDao;
++import ru.javaops.masterjava.persist.model.UserGroup;
++
++import java.util.List;
++import java.util.Set;
++
++import static ru.javaops.masterjava.persist.GroupTestData.*;
++import static ru.javaops.masterjava.persist.dao.UserGroupDao.toUserGroups;
++
++public class UserGroupTestData {
++
++    public static List<UserGroup> USER_GROUPS;
++
++    public static void init() {
++        UserTestData.init();
++        UserTestData.setUp();
++
++        GroupTestData.init();
++        GroupTestData.setUp();
++
++        USER_GROUPS = toUserGroups(UserTestData.ADMIN.getId(), TOPJAVA_07_ID, TOPJAVA_08_ID, MASTERJAVA_01_ID);
++        USER_GROUPS.addAll(toUserGroups(UserTestData.FULL_NAME.getId(), TOPJAVA_07_ID, MASTERJAVA_01_ID));
++        USER_GROUPS.addAll(toUserGroups(UserTestData.USER1.getId(), TOPJAVA_06_ID, MASTERJAVA_01_ID));
++        USER_GROUPS.add(new UserGroup(UserTestData.USER2.getId(), MASTERJAVA_01_ID));
++        USER_GROUPS.add(new UserGroup(UserTestData.USER3.getId(), MASTERJAVA_01_ID));
++    }
++
++    public static void setUp() {
++        UserGroupDao dao = DBIProvider.getDao(UserGroupDao.class);
++        dao.clean();
++        DBIProvider.getDBI().useTransaction((conn, status) -> {
++            dao.insertBatch(USER_GROUPS);
++        });
++    }
++
++    public static Set<Integer> getByGroupId(int groupId) {
++        return UserGroupDao.getByGroupId(groupId, USER_GROUPS);
++    }
++}
+Index: persist/src/main/java/ru/javaops/masterjava/persist/dao/GroupDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/main/java/ru/javaops/masterjava/persist/dao/GroupDao.java	(revision )
++++ persist/src/main/java/ru/javaops/masterjava/persist/dao/GroupDao.java	(revision )
+@@ -0,0 +1,37 @@
++package ru.javaops.masterjava.persist.dao;
++
++import com.bertoncelj.jdbi.entitymapper.EntityMapperFactory;
++import one.util.streamex.StreamEx;
++import org.skife.jdbi.v2.sqlobject.BindBean;
++import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
++import org.skife.jdbi.v2.sqlobject.SqlQuery;
++import org.skife.jdbi.v2.sqlobject.SqlUpdate;
++import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapperFactory;
++import ru.javaops.masterjava.persist.model.Group;
++
++import java.util.List;
++import java.util.Map;
++
++@RegisterMapperFactory(EntityMapperFactory.class)
++public abstract class GroupDao implements AbstractDao {
++
++    @SqlUpdate("TRUNCATE groups CASCADE ")
++    @Override
++    public abstract void clean();
++
++    @SqlQuery("SELECT * FROM groups ORDER BY name")
++    public abstract List<Group> getAll();
++
++    public Map<String, Group> getAsMap() {
++        return StreamEx.of(getAll()).toMap(Group::getName, g -> g);
++    }
++
++    @SqlUpdate("INSERT INTO groups (name, type, project_id)  VALUES (:name, CAST(:type AS group_type), :projectId)")
++    @GetGeneratedKeys
++    public abstract int insertGeneratedId(@BindBean Group groups);
++
++    public void insert(Group groups) {
++        int id = insertGeneratedId(groups);
++        groups.setId(id);
++    }
++}
+Index: persist/src/test/java/ru/javaops/masterjava/persist/ProjectTestData.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/test/java/ru/javaops/masterjava/persist/ProjectTestData.java	(revision )
++++ persist/src/test/java/ru/javaops/masterjava/persist/ProjectTestData.java	(revision )
+@@ -0,0 +1,34 @@
++package ru.javaops.masterjava.persist;
++
++import com.google.common.collect.ImmutableMap;
++import ru.javaops.masterjava.persist.dao.ProjectDao;
++import ru.javaops.masterjava.persist.model.Project;
++
++import java.util.Map;
++
++public class ProjectTestData {
++    public static Project TOPJAVA;
++    public static Project MASTERJAVA;
++    public static Map<String, Project> PROJECTS;
++
++    public static int TOPJAVA_ID;
++    public static int MASTERJAVA_ID;
++
++    public static void init() {
++        TOPJAVA = new Project("topjava", "Topjava");
++        MASTERJAVA = new Project("masterjava", "Masterjava");
++        PROJECTS = ImmutableMap.of(
++                TOPJAVA.getName(), TOPJAVA,
++                MASTERJAVA.getName(), MASTERJAVA);
++    }
++
++    public static void setUp() {
++        ProjectDao dao = DBIProvider.getDao(ProjectDao.class);
++        dao.clean();
++        DBIProvider.getDBI().useTransaction((conn, status) -> {
++            PROJECTS.values().forEach(dao::insert);
++        });
++        TOPJAVA_ID = TOPJAVA.getId();
++        MASTERJAVA_ID = MASTERJAVA.getId();
++    }
++}
+Index: persist/src/test/java/ru/javaops/masterjava/persist/dao/UserGroupDaoTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/test/java/ru/javaops/masterjava/persist/dao/UserGroupDaoTest.java	(revision )
++++ persist/src/test/java/ru/javaops/masterjava/persist/dao/UserGroupDaoTest.java	(revision )
+@@ -0,0 +1,39 @@
++package ru.javaops.masterjava.persist.dao;
++
++import org.junit.Assert;
++import org.junit.Before;
++import org.junit.BeforeClass;
++import org.junit.Test;
++import ru.javaops.masterjava.persist.UserGroupTestData;
++
++import java.util.Set;
++
++import static ru.javaops.masterjava.persist.GroupTestData.MASTERJAVA_01_ID;
++import static ru.javaops.masterjava.persist.GroupTestData.TOPJAVA_07_ID;
++import static ru.javaops.masterjava.persist.UserGroupTestData.getByGroupId;
++
++public class UserGroupDaoTest extends AbstractDaoTest<UserGroupDao> {
++
++    public UserGroupDaoTest() {
++        super(UserGroupDao.class);
++    }
++
++    @BeforeClass
++    public static void init() throws Exception {
++        UserGroupTestData.init();
++    }
++
++    @Before
++    public void setUp() throws Exception {
++        UserGroupTestData.setUp();
++    }
++
++    @Test
++    public void getAll() throws Exception {
++        Set<Integer> userIds = dao.getUserIds(MASTERJAVA_01_ID);
++        Assert.assertEquals(getByGroupId(MASTERJAVA_01_ID), userIds);
++
++        userIds = dao.getUserIds(TOPJAVA_07_ID);
++        Assert.assertEquals(getByGroupId(TOPJAVA_07_ID), userIds);
++    }
++}
+\ No newline at end of file
+Index: persist/src/test/java/ru/javaops/masterjava/persist/UserTestData.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/test/java/ru/javaops/masterjava/persist/UserTestData.java	(date 1511204807000)
++++ persist/src/test/java/ru/javaops/masterjava/persist/UserTestData.java	(revision )
+@@ -7,6 +7,8 @@
+ 
+ import java.util.List;
+ 
++import static ru.javaops.masterjava.persist.CityTestData.*;
++
+ public class UserTestData {
+     public static User ADMIN;
+     public static User DELETED;
+@@ -17,12 +19,15 @@
+     public static List<User> FIST5_USERS;
+ 
+     public static void init() {
+-        ADMIN = new User("Admin", "admin@javaops.ru", UserFlag.superuser, null);
+-        DELETED = new User("Deleted", "deleted@yandex.ru", UserFlag.deleted, null);
+-        FULL_NAME = new User("Full Name", "gmail@gmail.com", UserFlag.active, null);
+-        USER1 = new User("User1", "user1@gmail.com", UserFlag.active, null);
+-        USER2 = new User("User2", "user2@yandex.ru", UserFlag.active, null);
+-        USER3 = new User("User3", "user3@yandex.ru", UserFlag.active, null);
++        CityTestData.init();
++        CityTestData.setUp();
++
++        ADMIN = new User("Admin", "admin@javaops.ru", UserFlag.superuser, SPB.getRef());
++        DELETED = new User("Deleted", "deleted@yandex.ru", UserFlag.deleted, SPB.getRef());
++        FULL_NAME = new User("Full Name", "gmail@gmail.com", UserFlag.active, KIEV.getRef());
++        USER1 = new User("User1", "user1@gmail.com", UserFlag.active, MOSCOW.getRef());
++        USER2 = new User("User2", "user2@yandex.ru", UserFlag.active, KIEV.getRef());
++        USER3 = new User("User3", "user3@yandex.ru", UserFlag.active, MINSK.getRef());
+         FIST5_USERS = ImmutableList.of(ADMIN, DELETED, FULL_NAME, USER1, USER2);
+     }
+ 
+Index: persist/src/test/java/ru/javaops/masterjava/persist/dao/AbstractDaoTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/test/java/ru/javaops/masterjava/persist/dao/AbstractDaoTest.java	(date 1511204807000)
++++ persist/src/test/java/ru/javaops/masterjava/persist/dao/AbstractDaoTest.java	(revision )
+@@ -1,13 +1,32 @@
+ package ru.javaops.masterjava.persist.dao;
+ 
++import lombok.extern.slf4j.Slf4j;
++import org.junit.Rule;
++import org.junit.rules.TestRule;
++import org.junit.rules.TestWatcher;
++import org.junit.runner.Description;
+ import ru.javaops.masterjava.persist.DBIProvider;
+ import ru.javaops.masterjava.persist.DBITestProvider;
+ 
++@Slf4j
+ public abstract class AbstractDaoTest<DAO extends AbstractDao> {
+     static {
+         DBITestProvider.initDBI();
+     }
+ 
++    @Rule
++    public TestRule testWatcher = new TestWatcher() {
++        @Override
++        protected void starting(Description description) {
++            log.info("\n\n+++ Start " + description.getDisplayName());
++        }
++
++        @Override
++        protected void finished(Description description) {
++            log.info("\n+++ Finish " + description.getDisplayName() + '\n');
++        }
++    };
++
+     protected DAO dao;
+ 
+     protected AbstractDaoTest(Class<DAO> daoClass) {
