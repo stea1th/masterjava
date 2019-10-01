@@ -1,4 +1,4 @@
-set LB_HOME=c:\java\liquibase-3.5.3
+set LB_HOME=C:\Program Files\liquibase-3.8.0-bin
 call %LB_HOME%\liquibase.bat --driver=org.postgresql.Driver ^
 --classpath=%LB_HOME%\lib ^
 --changeLogFile=databaseChangeLog.sql ^
