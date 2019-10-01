@@ -1,6 +1,7 @@
 package ru.javaops.masterjava.persist.dao;
 
 import org.junit.*;
+import ru.javaops.masterjava.persist.CityTestData;
 import ru.javaops.masterjava.persist.UserTestData;
 import ru.javaops.masterjava.persist.model.User;
 
@@ -16,23 +17,23 @@ public class UserDaoTest extends AbstractDaoTest<UserDao> {
 
     @BeforeClass
     public static void init() throws Exception {
+        CityTestData.init();
         UserTestData.init();
     }
 
     @Before
     public void setUp() throws Exception {
+        CityTestData.setUp();
         UserTestData.setUp();
     }
 
     @Test
-    @Ignore
     public void getWithLimit() {
         List<User> users = dao.getWithLimit(5);
         Assert.assertEquals(FIST5_USERS, users);
     }
 
     @Test
-    @Ignore
     public void insertBatch() throws Exception {
         dao.clean();
         dao.insertBatch(FIST5_USERS, 3);
@@ -40,7 +41,6 @@ public class UserDaoTest extends AbstractDaoTest<UserDao> {
     }
 
     @Test
-    @Ignore
     public void getSeqAndSkip() throws Exception {
         int seq1 = dao.getSeqAndSkip(5);
         int seq2 = dao.getSeqAndSkip(1);
