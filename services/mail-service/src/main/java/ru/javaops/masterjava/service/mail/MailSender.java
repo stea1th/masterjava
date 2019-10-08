@@ -10,9 +10,12 @@ import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
 import ru.javaops.masterjava.config.Configs;
 import ru.javaops.masterjava.persist.DBIProvider;
+import ru.javaops.masterjava.service.mail.dao.MailDao;
+import ru.javaops.masterjava.service.mail.model.Mail;
 
 import javax.mail.internet.InternetAddress;
 import java.io.UnsupportedEncodingException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -26,14 +29,25 @@ public class MailSender {
 
     private static LoadingCache<String, String> cache = createEmailConfigCache();
 
-    static void sendMail(List<Addressee> to, List<Addressee> cc, String subject, String body) throws EmailException, ExecutionException {
+    static void sendMail(List<Addressee> to, List<Addressee> cc, String subject, String body) throws ExecutionException {
         log.info("Send mail to \'" + to + "\' cc \'" + cc + "\' subject \'" + subject + (log.isDebugEnabled() ? "\nbody=" + body : ""));
         Email email = createSimpleEmailWithConfig(to, cc, subject, body);
-
-
-
-        System.out.println(email.send());
-        System.out.println("==============" + email.getSentDate());
+        MailDao dao = DBIProvider.getDao(MailDao.class);
+        Mail mail = new Mail();
+        mail.setToList(getEmails(to));
+        mail.setCcList(getEmails(cc));
+        mail.setSubject(subject);
+        mail.setBody(body);
+        try {
+            email.send();
+            mail.setSentDate(email.getSentDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+            mail.setSuccessful(true);
+        } catch (EmailException e) {
+            mail.setSentDate(null);
+            mail.setSuccessful(false);
+        } finally {
+            dao.insert(mail);
+        }
     }
 
     private static Collection<InternetAddress> createCollection(List<Addressee> list) {
@@ -51,6 +65,10 @@ public class MailSender {
         }
         return new ArrayList<InternetAddress>() {
         };
+    }
+
+    private static String[] getEmails(List<Addressee> list) {
+        return list.stream().map(Addressee::getEmail).toArray(String[]::new);
     }
 
     private static LoadingCache<String, String> createEmailConfigCache() {

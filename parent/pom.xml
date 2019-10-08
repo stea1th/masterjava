@@ -40,7 +40,6 @@
                 <version>2.20.1</version>
                 <configuration>
                     <argLine>-Dfile.encoding=UTF-8</argLine>
-                    <skipTests>true</skipTests>
                 </configuration>
             </plugin>
             <plugin>

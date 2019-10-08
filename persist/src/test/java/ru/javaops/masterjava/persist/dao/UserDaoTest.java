@@ -1,9 +1,6 @@
 package ru.javaops.masterjava.persist.dao;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import ru.javaops.masterjava.persist.UserTestData;
 import ru.javaops.masterjava.persist.model.User;
 
@@ -41,6 +38,7 @@ public class UserDaoTest extends AbstractDaoTest<UserDao> {
     }
 
     @Test
+    @Ignore
     public void getSeqAndSkip() throws Exception {
         int seq1 = dao.getSeqAndSkip(5);
         int seq2 = dao.getSeqAndSkip(1);

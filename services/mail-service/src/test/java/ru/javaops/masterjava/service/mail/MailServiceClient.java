@@ -1,6 +1,7 @@
 package ru.javaops.masterjava.service.mail;
 
 import com.google.common.collect.ImmutableList;
+import ru.javaops.masterjava.persist.DBITestProvider;
 
 import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
@@ -16,9 +17,10 @@ public class MailServiceClient {
 //
 //        MailService mailService = service.getPort(MailService.class);
         MailService mailService = new MailServiceImpl();
+        DBITestProvider.initDBI();
         mailService.sendMail(ImmutableList.of(new Addressee("yxcyxcyxcaj@ycyxcyxcyxcyxc.ru", null)),
                 ImmutableList.of(new Addressee("stea1th@mail.ru", "Vadim"),
-                        new Addressee("sadasdasdkasjdkajsdkasddffgdfgdfgdfg.ru", null)),
+                        new Addressee("sadasdasdkasjdkajsdka@sddffgdfgdfgdfg.ru", null)),
                 "Subject", "Body");
     }
 }

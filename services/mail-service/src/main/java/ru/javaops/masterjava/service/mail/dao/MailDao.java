@@ -12,7 +12,7 @@ public abstract class MailDao implements AbstractDao {
 
     @SqlUpdate("INSERT INTO mail (to_list, cc_list, subject, body, sent_date, is_successful) VALUES" +
             " (:toList, :ccList, :subject, :body, :sentDate, :isSuccessful) ")
-    abstract void insert(@BindBean Mail mail);
+    public abstract void insert(@BindBean Mail mail);
 
     @Override
     @SqlUpdate("TRUNCATE mail CASCADE")

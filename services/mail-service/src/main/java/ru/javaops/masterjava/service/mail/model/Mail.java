@@ -5,7 +5,6 @@ import lombok.*;
 import ru.javaops.masterjava.persist.model.BaseEntity;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -15,10 +14,10 @@ import java.util.List;
 public class Mail extends BaseEntity {
 
     @Column("to_list")
-    private List<String> toList;
+    private String[] toList;
 
     @Column("cc_list")
-    private List<String> ccList;
+    private String[] ccList;
 
     private String subject;
     private String body;
