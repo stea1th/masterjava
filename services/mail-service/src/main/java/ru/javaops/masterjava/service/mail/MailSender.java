@@ -9,6 +9,7 @@ import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
 import ru.javaops.masterjava.config.Configs;
+import ru.javaops.masterjava.persist.DBIProvider;
 
 import javax.mail.internet.InternetAddress;
 import java.io.UnsupportedEncodingException;
@@ -76,7 +77,11 @@ public class MailSender {
             email.setSubject(subject);
             email.setMsg(body);
             email.setTo(createCollection(to));
-            email.setCc(createCollection(cc));
+            Collection<InternetAddress> ccCollection = createCollection(cc);
+            if(ccCollection.size() != 0) {
+                email.setCc(ccCollection);
+            }
+
         } catch (EmailException exp) {
             exp.printStackTrace();
         }
