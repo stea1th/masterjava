@@ -30,7 +30,10 @@ public class MailSender {
         log.info("Send mail to \'" + to + "\' cc \'" + cc + "\' subject \'" + subject + (log.isDebugEnabled() ? "\nbody=" + body : ""));
         Email email = createSimpleEmailWithConfig(to, cc, subject, body);
 
-        email.send();
+
+
+        System.out.println(email.send());
+        System.out.println("==============" + email.getSentDate());
     }
 
     private static Collection<InternetAddress> createCollection(List<Addressee> list) {
@@ -78,7 +81,7 @@ public class MailSender {
             email.setMsg(body);
             email.setTo(createCollection(to));
             Collection<InternetAddress> ccCollection = createCollection(cc);
-            if(ccCollection.size() != 0) {
+            if (ccCollection.size() != 0) {
                 email.setCc(ccCollection);
             }
 
