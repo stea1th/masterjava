@@ -54,6 +54,9 @@ public abstract class UserDao implements AbstractDao {
 //            "ON CONFLICT (email) DO UPDATE SET full_name=:fullName, flag=CAST(:flag AS USER_FLAG)")
     public abstract int[] insertBatch(@BindBean List<User> users, @BatchChunkSize int chunkSize);
 
+    @SqlQuery("SELECT id FROM users WHERE email = :email ")
+    public abstract int getIdByEmail(@Bind("email") String email);
+
 
     public List<String> insertAndGetConflictEmails(List<User> users) {
         int[] result = insertBatch(users, users.size());
