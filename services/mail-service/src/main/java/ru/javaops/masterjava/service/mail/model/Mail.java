@@ -3,6 +3,7 @@ package ru.javaops.masterjava.service.mail.model;
 import com.bertoncelj.jdbi.entitymapper.Column;
 import lombok.*;
 import ru.javaops.masterjava.persist.model.BaseEntity;
+import ru.javaops.masterjava.service.mail.Addressee;
 
 import java.time.LocalDateTime;
 
@@ -14,10 +15,10 @@ import java.time.LocalDateTime;
 public class Mail extends BaseEntity {
 
     @Column("to_list")
-    private String[] toList;
+    private String toList;
 
     @Column("cc_list")
-    private String[] ccList;
+    private String ccList;
 
     private String subject;
     private String body;
@@ -25,7 +26,7 @@ public class Mail extends BaseEntity {
     @Column("sent_date")
     private LocalDateTime sentDate;
 
-    @Column("is_successful")
-    private boolean isSuccessful;
-
+    @Column(value="is_successful")
+    @NonNull
+    private Boolean isSuccessful = true;
 }

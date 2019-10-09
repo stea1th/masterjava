@@ -15,6 +15,7 @@ import ru.javaops.masterjava.service.mail.model.Mail;
 
 import javax.mail.internet.InternetAddress;
 import java.io.UnsupportedEncodingException;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,17 +35,17 @@ public class MailSender {
         Email email = createSimpleEmailWithConfig(to, cc, subject, body);
         MailDao dao = DBIProvider.getDao(MailDao.class);
         Mail mail = new Mail();
-        mail.setToList(getEmails(to));
-        mail.setCcList(getEmails(cc));
+        mail.setToList(createString(to));
+        mail.setCcList(createString(cc));
         mail.setSubject(subject);
         mail.setBody(body);
         try {
             email.send();
             mail.setSentDate(email.getSentDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
-            mail.setSuccessful(true);
+            mail.setIsSuccessful(true);
         } catch (EmailException e) {
-            mail.setSentDate(null);
-            mail.setSuccessful(false);
+            mail.setSentDate(LocalDateTime.now());
+            mail.setIsSuccessful(false);
         } finally {
             dao.insert(mail);
         }
@@ -67,8 +68,8 @@ public class MailSender {
         };
     }
 
-    private static String[] getEmails(List<Addressee> list) {
-        return list.stream().map(Addressee::getEmail).toArray(String[]::new);
+    private static String createString(List<Addressee> list) {
+        return list.stream().map(Addressee::getEmail).collect(Collectors.joining(","));
     }
 
     private static LoadingCache<String, String> createEmailConfigCache() {

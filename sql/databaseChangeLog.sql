@@ -38,24 +38,15 @@ CREATE TABLE user_group
 );
 
 --changeset vlasov:1
+
 CREATE TABLE mail
 (
-    id      INTEGER PRIMARY KEY DEFAULT nextval('common_seq'),
-    subject TEXT,
-    body    TEXT,
-    sent_date TIMESTAMP NOT NULL,
-    is_successful BOOLEAN
+    id            INTEGER PRIMARY KEY DEFAULT nextval('common_seq'),
+    to_list       TEXT,
+    cc_list       TEXT,
+    subject       TEXT,
+    body          TEXT,
+    sent_date     TIMESTAMP NOT NULL,
+    is_successful BOOLEAN   NOT NULL  DEFAULT TRUE
 );
 
-CREATE TABLE addressee
-(
-    id      INTEGER PRIMARY KEY DEFAULT nextval('common_seq'),
-    email TEXT,
-    name TEXT
-);
-
-CREATE TABLE mail_addressee
-(
-    mail_id INTEGER NOT NULL REFERENCES mail (id),
-    addressee_id INTEGER NOT NULL REFERENCES addressee (id)
-)
