@@ -47,7 +47,7 @@ public class MailSender {
             mail.setSentDate(LocalDateTime.now());
             mail.setIsSuccessful(false);
         } finally {
-            dao.insert(mail);
+            dao.insertGeneratedId(mail);
         }
     }
 
