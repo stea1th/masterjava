@@ -15,8 +15,6 @@ public class PayloadProcessor {
     private final CityProcessor cityProcessor = new CityProcessor();
     private final UserProcessor userProcessor = new UserProcessor();
     private final ProjectProcessor projectProcessor = new ProjectProcessor();
-    private final GroupProcessor groupProcessor = new GroupProcessor();
-    private final UserGroupProcessor userGroupProcessor = new UserGroupProcessor();
 
     @AllArgsConstructor
     public static class FailedEmails {
@@ -32,11 +30,8 @@ public class PayloadProcessor {
 
     public List<FailedEmails> process(InputStream is, int chunkSize) throws XMLStreamException, JAXBException {
         final StaxStreamProcessor processor = new StaxStreamProcessor(is);
-        Map<String, Integer> mapOfGroups = projectProcessor.process(processor);
-        Map<String, Group> groupMap = groupProcessor.process(processor, mapOfGroups);
+        Map<String, Group> groupMap = projectProcessor.process(processor);
         val cities = cityProcessor.process(processor);
-        List<FailedEmails> failedEmails = userProcessor.process(processor, cities, chunkSize);
-        userGroupProcessor.process(processor, failedEmails, groupMap);
-        return failedEmails;
+        return userProcessor.process(processor, cities, groupMap, chunkSize);
     }
 }

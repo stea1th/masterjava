@@ -4,8 +4,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import ru.javaops.masterjava.persist.DBIProvider;
 import ru.javaops.masterjava.persist.dao.UserDao;
+import ru.javaops.masterjava.persist.dao.UserGroupDao;
 import ru.javaops.masterjava.persist.model.City;
+import ru.javaops.masterjava.persist.model.Group;
 import ru.javaops.masterjava.persist.model.User;
+import ru.javaops.masterjava.persist.model.UserGroup;
 import ru.javaops.masterjava.persist.model.type.UserFlag;
 import ru.javaops.masterjava.upload.PayloadProcessor.FailedEmails;
 import ru.javaops.masterjava.xml.schema.ObjectFactory;
@@ -15,10 +18,7 @@ import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
 import javax.xml.bind.JAXBException;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,12 +31,14 @@ public class UserProcessor {
     private static final JaxbParser jaxbParser = new JaxbParser(ObjectFactory.class);
     private static UserDao userDao = DBIProvider.getDao(UserDao.class);
 
+    private final UserGroupDao userGroupDao = DBIProvider.getDao(UserGroupDao.class);
+
     private ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
 
     /*
      * return failed users chunks
      */
-    public List<FailedEmails> process(final StaxStreamProcessor processor, Map<String, City> cities, int chunkSize) throws XMLStreamException, JAXBException {
+    public List<FailedEmails> process(final StaxStreamProcessor processor, Map<String, City> cities, Map<String, Group> groups, int chunkSize) throws XMLStreamException, JAXBException {
         log.info("Start processing with chunkSize=" + chunkSize);
 
         Map<String, Future<List<String>>> chunkFutures = new LinkedHashMap<>();  // ordered map (emailRange -> chunk future)
@@ -45,25 +47,43 @@ public class UserProcessor {
         List<User> chunk = new ArrayList<>(chunkSize);
         val unmarshaller = jaxbParser.createUnmarshaller();
         List<FailedEmails> failed = new ArrayList<>();
+        List<UserGroup> userGroups = new ArrayList<>();
 
         while (processor.doUntil(XMLEvent.START_ELEMENT, "User")) {
             String cityRef = processor.getAttribute("city");  // unmarshal doesn't get city ref
+            String groupRefs = processor.getAttribute("groupRefs");
             ru.javaops.masterjava.xml.schema.User xmlUser = unmarshaller.unmarshal(processor.getReader(), ru.javaops.masterjava.xml.schema.User.class);
             if (cities.get(cityRef) == null) {
                 failed.add(new FailedEmails(xmlUser.getEmail(), "City '" + cityRef + "' is not present in DB"));
             } else {
-                final User user = new User(id++, xmlUser.getValue(), xmlUser.getEmail(), UserFlag.valueOf(xmlUser.getFlag().value()), cityRef);
+                int userId = id++;
+                final User user = new User(userId, xmlUser.getValue(), xmlUser.getEmail(), UserFlag.valueOf(xmlUser.getFlag().value()), cityRef);
                 chunk.add(user);
                 if (chunk.size() == chunkSize) {
                     addChunkFutures(chunkFutures, chunk);
                     chunk = new ArrayList<>(chunkSize);
                     id = userDao.getSeqAndSkip(chunkSize);
                 }
+                if (groupRefs != null) {
+                    Arrays.stream(groupRefs.split(" "))
+                            .forEach(i -> {
+                                Integer groupId = groups.get(i).getId();
+                                if (groupId == null) {
+                                    failed.add(new FailedEmails(xmlUser.getEmail(), "Group '" + i + "' is not present in DB"));
+                                } else {
+                                    userGroups.add(new UserGroup(userId, groupId));
+                                }
+                            });
+                }
             }
         }
 
         if (!chunk.isEmpty()) {
             addChunkFutures(chunkFutures, chunk);
+        }
+
+        if (!userGroups.isEmpty()) {
+            userGroupDao.insertBatch(userGroups);
         }
 
         List<String> allAlreadyPresents = new ArrayList<>();

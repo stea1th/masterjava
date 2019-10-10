@@ -2,13 +2,15 @@ package ru.javaops.masterjava.upload;
 
 import lombok.extern.slf4j.Slf4j;
 import ru.javaops.masterjava.persist.DBIProvider;
+import ru.javaops.masterjava.persist.dao.GroupDao;
 import ru.javaops.masterjava.persist.dao.ProjectDao;
+import ru.javaops.masterjava.persist.model.Group;
 import ru.javaops.masterjava.persist.model.Project;
+import ru.javaops.masterjava.persist.model.type.GroupType;
 import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
 
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.XMLEvent;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -16,21 +18,29 @@ import java.util.Map;
 public class ProjectProcessor {
 
     private final ProjectDao projectDao = DBIProvider.getDao(ProjectDao.class);
+    private final GroupDao groupDao = DBIProvider.getDao(GroupDao.class);
 
-    public Map<String, Integer> process(StaxStreamProcessor processor) throws XMLStreamException {
+    public Map<String, Group> process(StaxStreamProcessor processor) throws XMLStreamException {
 
         List<String> projectNames = projectDao.getAllNames();
-        Map<String, Integer> mapOfGroups = new HashMap<>();
+        List<String> groupNames = groupDao.getAllNames();
+        List<Group> newGroups = new ArrayList<>();
 
-        while (processor.doUntil(XMLEvent.START_ELEMENT, "Project")) {
+        while (processor.startElement("Project", "Projects")) {
             String name = processor.getAttribute("name");
             if (!projectNames.contains(name)) {
                 int id = projectDao.insertGeneratedId(new Project(name, processor.getElementValue("description")));
                 while (processor.startElement("Group", "Project")) {
-                    mapOfGroups.put(processor.getAttribute("name"), id);
+                    String groupName = processor.getAttribute("name");
+                    if (!groupNames.contains(groupName)) {
+                        newGroups.add(new Group(groupName, GroupType.valueOf(processor.getAttribute("type")), id));
+                    }
                 }
             }
         }
-        return mapOfGroups;
+        if (!newGroups.isEmpty())
+            groupDao.insertBatch(newGroups);
+
+        return groupDao.getAsMap();
     }
 }
