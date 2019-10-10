@@ -1,0 +1,174 @@
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/ProjectGroupProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/ProjectGroupProcessor.java	(revision )
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/ProjectGroupProcessor.java	(revision )
+@@ -0,0 +1,52 @@
++package ru.javaops.masterjava.upload;
++
++import lombok.extern.slf4j.Slf4j;
++import lombok.val;
++import ru.javaops.masterjava.persist.DBIProvider;
++import ru.javaops.masterjava.persist.dao.GroupDao;
++import ru.javaops.masterjava.persist.dao.ProjectDao;
++import ru.javaops.masterjava.persist.model.Group;
++import ru.javaops.masterjava.persist.model.Project;
++import ru.javaops.masterjava.persist.model.type.GroupType;
++import ru.javaops.masterjava.xml.schema.Payload;
++import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
++
++import javax.xml.bind.JAXBException;
++import javax.xml.stream.XMLStreamException;
++import javax.xml.stream.events.XMLEvent;
++import java.util.ArrayList;
++import java.util.Map;
++
++import static ru.javaops.masterjava.upload.PayloadProcessor.jaxbParser;
++
++@Slf4j
++public class ProjectGroupProcessor {
++    private final ProjectDao projectDao = DBIProvider.getDao(ProjectDao.class);
++    private final GroupDao groupDao = DBIProvider.getDao(GroupDao.class);
++
++    public Map<String, Group> process(StaxStreamProcessor processor) throws XMLStreamException, JAXBException {
++        val projectMap = projectDao.getAsMap();
++        val groupMap = groupDao.getAsMap();
++        val newGroups = new ArrayList<Group>();
++
++        processor.doUntil(XMLEvent.START_ELEMENT, "Projects");
++        Payload.Projects projects = jaxbParser.createUnmarshaller().unmarshal(processor.getReader(), Payload.Projects.class);
++        projects.getProject().forEach(p -> {
++            Project project = projectMap.get(p.getName());
++            if (project == null) {
++                project = new Project(p.getName(), p.getDescription());
++                log.info("Insert project " + project);
++                projectDao.insert(project);
++            }
++            final int projectId = project.getId();
++            p.getGroup().forEach(g -> {
++                if (!groupMap.containsKey(g.getName())) {
++                    newGroups.add(new Group(g.getName(), GroupType.valueOf(g.getType().value()), projectId));
++                }
++            });
++        });
++        log.info("Insert groups " + newGroups);
++        groupDao.insertBatch(newGroups);
++        return groupDao.getAsMap();
++    }
++}
+\ No newline at end of file
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(date 1511830449000)
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(revision )
+@@ -5,11 +5,10 @@
+ import ru.javaops.masterjava.persist.DBIProvider;
+ import ru.javaops.masterjava.persist.dao.UserDao;
+ import ru.javaops.masterjava.persist.model.City;
++import ru.javaops.masterjava.persist.model.Group;
+ import ru.javaops.masterjava.persist.model.User;
+ import ru.javaops.masterjava.persist.model.type.UserFlag;
+ import ru.javaops.masterjava.upload.PayloadProcessor.FailedEmails;
+-import ru.javaops.masterjava.xml.schema.ObjectFactory;
+-import ru.javaops.masterjava.xml.util.JaxbParser;
+ import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
+ 
+ import javax.xml.bind.JAXBException;
+@@ -24,11 +23,12 @@
+ import java.util.concurrent.Executors;
+ import java.util.concurrent.Future;
+ 
++import static ru.javaops.masterjava.upload.PayloadProcessor.jaxbParser;
++
+ @Slf4j
+ public class UserProcessor {
+     private static final int NUMBER_THREADS = 4;
+ 
+-    private static final JaxbParser jaxbParser = new JaxbParser(ObjectFactory.class);
+     private static UserDao userDao = DBIProvider.getDao(UserDao.class);
+ 
+     private ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
+@@ -36,7 +36,7 @@
+     /*
+      * return failed users chunks
+      */
+-    public List<FailedEmails> process(final StaxStreamProcessor processor, Map<String, City> cities, int chunkSize) throws XMLStreamException, JAXBException {
++    public List<FailedEmails> process(final StaxStreamProcessor processor, Map<String, Group> groups, Map<String, City> cities, int chunkSize) throws XMLStreamException, JAXBException {
+         log.info("Start processing with chunkSize=" + chunkSize);
+ 
+         Map<String, Future<List<String>>> chunkFutures = new LinkedHashMap<>();  // ordered map (emailRange -> chunk future)
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/PayloadProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/PayloadProcessor.java	(date 1511830449000)
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/PayloadProcessor.java	(revision )
+@@ -2,6 +2,8 @@
+ 
+ import lombok.AllArgsConstructor;
+ import lombok.val;
++import ru.javaops.masterjava.xml.schema.ObjectFactory;
++import ru.javaops.masterjava.xml.util.JaxbParser;
+ import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
+ 
+ import javax.xml.bind.JAXBException;
+@@ -10,6 +12,8 @@
+ import java.util.List;
+ 
+ public class PayloadProcessor {
++    public static final JaxbParser jaxbParser = new JaxbParser(ObjectFactory.class);
++    private final ProjectGroupProcessor projectGroupProcessor = new ProjectGroupProcessor();
+     private final CityProcessor cityProcessor = new CityProcessor();
+     private final UserProcessor userProcessor = new UserProcessor();
+ 
+@@ -24,10 +28,10 @@
+         }
+     }
+ 
+-
+     public List<FailedEmails> process(InputStream is, int chunkSize) throws XMLStreamException, JAXBException {
+         final StaxStreamProcessor processor = new StaxStreamProcessor(is);
++        val groups = projectGroupProcessor.process(processor);
+         val cities = cityProcessor.process(processor);
+-        return userProcessor.process(processor, cities, chunkSize);
++        return userProcessor.process(processor, groups, cities, chunkSize);
+     }
+ }
+\ No newline at end of file
+Index: persist/src/main/java/ru/javaops/masterjava/persist/dao/GroupDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/main/java/ru/javaops/masterjava/persist/dao/GroupDao.java	(date 1511830449000)
++++ persist/src/main/java/ru/javaops/masterjava/persist/dao/GroupDao.java	(revision )
+@@ -2,13 +2,11 @@
+ 
+ import com.bertoncelj.jdbi.entitymapper.EntityMapperFactory;
+ import one.util.streamex.StreamEx;
+-import org.skife.jdbi.v2.sqlobject.BindBean;
+-import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
+-import org.skife.jdbi.v2.sqlobject.SqlQuery;
+-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
++import org.skife.jdbi.v2.sqlobject.*;
+ import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapperFactory;
+ import ru.javaops.masterjava.persist.model.Group;
+ 
++import java.util.Collection;
+ import java.util.List;
+ import java.util.Map;
+ 
+@@ -34,4 +32,7 @@
+         int id = insertGeneratedId(groups);
+         groups.setId(id);
+     }
++
++    @SqlBatch("INSERT INTO groups (name, type, project_id) VALUES (:name, CAST(:type AS group_type), :projectId)")
++    public abstract void insertBatch(@BindBean Collection<Group> groups);
+ }

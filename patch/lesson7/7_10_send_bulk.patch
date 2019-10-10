@@ -1,0 +1,38 @@
+Index: services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/MailService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/MailService.java	(date 1511836636000)
++++ services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/MailService.java	(revision )
+@@ -18,4 +18,11 @@
+             @WebParam(name = "cc") Set<Addressee> cc,
+             @WebParam(name = "subject") String subject,
+             @WebParam(name = "body") String body);
++
++    @WebMethod
++    GroupResult sendBulk(
++            @WebParam(name = "to") Set<Addressee> to,
++            @WebParam(name = "subject") String subject,
++            @WebParam(name = "body") String body);
++
+ }
+\ No newline at end of file
+Index: services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailServiceImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailServiceImpl.java	(date 1511836636000)
++++ services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailServiceImpl.java	(revision )
+@@ -10,4 +10,9 @@
+     public String sendToGroup(Set<Addressee> to, Set<Addressee> cc, String subject, String body) {
+         return MailSender.sendToGroup(to, cc, subject, body);
+     }
++
++    @Override
++    public GroupResult sendBulk(Set<Addressee> to, String subject, String body) {
++        return MailServiceExecutor.sendBulk(to, subject, body);
++    }
+ }
+\ No newline at end of file

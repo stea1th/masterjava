@@ -1,0 +1,97 @@
+Index: services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServiceClient.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServiceClient.java	(date 1511833021000)
++++ services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServiceClient.java	(revision )
+@@ -12,11 +12,10 @@
+     public static void main(String[] args) throws MalformedURLException {
+         Service service = Service.create(
+                 new URL("http://localhost:8080/mail/mailService?wsdl"),
+-                new QName("http://mail.service.masterjava.javaops.ru/", "MailServiceImplService"));
++                new QName("http://mail.javaops.ru/", "MailServiceImplService"));
+ 
+         MailService mailService = service.getPort(MailService.class);
+         mailService.sendMail(ImmutableList.of(
+-                new Addressee("masterjava@javaops.ru", null),
+-                new Addressee("Bad Email <bad_email.ru>")), null, "Subject", "Body");
++                new Addressee("masterjava@javaops.ru", null)), null, "Subject", "Body");
+     }
+ }
+Index: services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServicePublisher.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServicePublisher.java	(date 1511833021000)
++++ services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServicePublisher.java	(revision )
+@@ -1,13 +1,25 @@
+ package ru.javaops.masterjava.service.mail;
+ 
++import com.google.common.collect.ImmutableList;
+ import ru.javaops.masterjava.persist.DBITestProvider;
+ 
++import javax.xml.transform.Source;
++import javax.xml.transform.stream.StreamSource;
+ import javax.xml.ws.Endpoint;
++import java.io.File;
++import java.util.List;
+ 
+ public class MailServicePublisher {
+ 
+     public static void main(String[] args) {
+         DBITestProvider.initDBI();
+-        Endpoint.publish("http://localhost:8080/mail/mailService", new MailServiceImpl());
++
++        Endpoint endpoint = Endpoint.create(new MailServiceImpl());
++        List<Source> metadata = ImmutableList.of(
++                new StreamSource(
++                        new File("services/mail-service/src/main/webapp/WEB-INF/wsdl/mailService.wsdl")));
++
++        endpoint.setMetadata(metadata);
++        endpoint.publish("http://localhost:8080/mail/mailService");
+     }
+ }
+Index: services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/MailService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/MailService.java	(date 1511833021000)
++++ services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/MailService.java	(revision )
+@@ -5,11 +5,11 @@
+ import javax.jws.WebService;
+ import java.util.List;
+ 
+-/**
+- * gkislin
+- * 15.11.2016
+- */
+-@WebService
++@WebService(targetNamespace = "http://mail.javaops.ru/")
++//@SOAPBinding(
++//        style = SOAPBinding.Style.DOCUMENT,
++//        use= SOAPBinding.Use.LITERAL,
++//        parameterStyle = SOAPBinding.ParameterStyle.WRAPPED)
+ public interface MailService {
+ 
+     @WebMethod
+Index: services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailServiceImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailServiceImpl.java	(date 1511833021000)
++++ services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailServiceImpl.java	(revision )
+@@ -3,7 +3,9 @@
+ import javax.jws.WebService;
+ import java.util.List;
+ 
+-@WebService(endpointInterface = "ru.javaops.masterjava.service.mail.MailService")
++@WebService(endpointInterface = "ru.javaops.masterjava.service.mail.MailService", targetNamespace = "http://mail.javaops.ru/"
++//          , wsdlLocation = "WEB-INF/wsdl/mailService.wsdl"
++)
+ public class MailServiceImpl implements MailService {
+     public void sendMail(List<Addressee> to, List<Addressee> cc, String subject, String body) {
+         MailSender.sendMail(to, cc, subject, body);

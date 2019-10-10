@@ -1,0 +1,341 @@
+Index: services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/persist/MailCase.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/persist/MailCase.java	(revision )
++++ services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/persist/MailCase.java	(revision )
+@@ -0,0 +1,27 @@
++package ru.javaops.masterjava.service.mail.persist;
++
++import com.bertoncelj.jdbi.entitymapper.Column;
++import com.google.common.base.Joiner;
++import lombok.*;
++import ru.javaops.masterjava.persist.model.BaseEntity;
++import ru.javaops.masterjava.service.mail.Addressee;
++
++import java.util.Date;
++import java.util.List;
++
++@Data
++@AllArgsConstructor
++@NoArgsConstructor
++@EqualsAndHashCode(callSuper = false) // compare without id
++@ToString
++public class MailCase extends BaseEntity {
++    private @Column("list_to") String listTo;
++    private @Column("list_cc") String listCc;
++    private String subject;
++    private String state;
++    private Date datetime;
++
++    public static MailCase of(List<Addressee> to, List<Addressee> cc, String subject, String state){
++        return new MailCase(Joiner.on(", ").join(to), Joiner.on(", ").join(cc), subject, state, new Date());
++    }
++}
+\ No newline at end of file
+Index: services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/persist/MailCaseTestData.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/persist/MailCaseTestData.java	(revision )
++++ services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/persist/MailCaseTestData.java	(revision )
+@@ -0,0 +1,43 @@
++package ru.javaops.masterjava.service.mail.persist;
++
++import com.google.common.collect.ImmutableList;
++import ru.javaops.masterjava.persist.DBIProvider;
++import ru.javaops.masterjava.service.mail.Addressee;
++
++import java.time.Duration;
++import java.time.Instant;
++import java.util.Date;
++import java.util.List;
++
++public class MailCaseTestData {
++    private static final Instant now = Instant.now();
++    static final Date DATE_FROM = Date.from(now.minus(Duration.ofDays(1)));
++
++    static final List<MailCase> MAIL_CASES = ImmutableList.of(
++            MailCase.of(
++                    ImmutableList.of(
++                            new Addressee("ИмяTo1 Фамилия1 <mailTo1@ya.ru>"),
++                            new Addressee("Имя2 Фамилия2 <mailTo2@ya.ru>")),
++                    ImmutableList.of(
++                            new Addressee("ИмяCc1 Фамилия1 <mail1Cc@ya.ru>"),
++                            new Addressee("ИмяCc2 Фамилия2 <mailCc2@ya.ru>")),
++                    "subject1", "state1"
++            ),
++            new MailCase("toMail2@ya.ru", null, "subject2", "state2",
++                    Date.from(now.minus(Duration.ofMinutes(1)))),
++            new MailCase(null, "ccMail3@ya.ru", "subject3", "state3", DATE_FROM)
++    );
++
++    private static final MailCase MAIL_CASE_EXCLUDED =
++            new MailCase("toMail4@ya.ru", "ccMail4@ya.ru", "subject4", "state4",
++                    Date.from(now.minus(Duration.ofDays(2))));
++
++    public static void setUp() {
++        MailCaseDao dao = DBIProvider.getDao(MailCaseDao.class);
++        dao.clean();
++        DBIProvider.getDBI().useTransaction((conn, status) -> {
++            MAIL_CASES.forEach(dao::insert);
++            dao.insert(MAIL_CASE_EXCLUDED);
++        });
++    }
++}
+\ No newline at end of file
+Index: services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/persist/MailCaseDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/persist/MailCaseDao.java	(revision )
++++ services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/persist/MailCaseDao.java	(revision )
+@@ -0,0 +1,24 @@
++package ru.javaops.masterjava.service.mail.persist;
++
++import com.bertoncelj.jdbi.entitymapper.EntityMapperFactory;
++import org.skife.jdbi.v2.sqlobject.*;
++import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapperFactory;
++import ru.javaops.masterjava.persist.dao.AbstractDao;
++
++import java.util.Date;
++import java.util.List;
++
++@RegisterMapperFactory(EntityMapperFactory.class)
++public abstract class MailCaseDao implements AbstractDao {
++
++    @SqlUpdate("TRUNCATE mail_hist")
++    @Override
++    public abstract void clean();
++
++    @SqlQuery("SELECT * FROM mail_hist WHERE datetime >= :after ORDER BY datetime DESC")
++    public abstract List<MailCase> getAfter(@Bind("after") Date date);
++
++    @SqlUpdate("INSERT INTO mail_hist (list_to, list_cc, subject, state, datetime)  VALUES (:listTo, :listCc, :subject, :state, :datetime)")
++    @GetGeneratedKeys
++    public abstract int insert(@BindBean MailCase mails);
++}
+Index: services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/persist/MailCaseDaoTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/persist/MailCaseDaoTest.java	(revision )
++++ services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/persist/MailCaseDaoTest.java	(revision )
+@@ -0,0 +1,22 @@
++package ru.javaops.masterjava.service.mail.persist;
++
++import org.junit.Assert;
++import org.junit.Before;
++import org.junit.Test;
++import ru.javaops.masterjava.persist.dao.AbstractDaoTest;
++
++public class MailCaseDaoTest extends AbstractDaoTest<MailCaseDao> {
++    public MailCaseDaoTest() {
++        super(MailCaseDao.class);
++    }
++
++    @Before
++    public void setUp() throws Exception {
++        MailCaseTestData.setUp();
++    }
++
++    @Test
++    public void getAll() throws Exception {
++        Assert.assertEquals(MailCaseTestData.MAIL_CASES, dao.getAfter(MailCaseTestData.DATE_FROM));
++    }
++}
+\ No newline at end of file
+Index: services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailSender.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailSender.java	(date 1511830147000)
++++ services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailSender.java	(revision )
+@@ -4,13 +4,19 @@
+ import lombok.extern.slf4j.Slf4j;
+ import lombok.val;
+ import org.apache.commons.mail.EmailException;
++import ru.javaops.masterjava.persist.DBIProvider;
++import ru.javaops.masterjava.service.mail.persist.MailCase;
++import ru.javaops.masterjava.service.mail.persist.MailCaseDao;
+ 
+ import java.util.List;
+ 
+ @Slf4j
+ public class MailSender {
++    private static final MailCaseDao MAIL_CASE_DAO = DBIProvider.getDao(MailCaseDao.class);
++
+     static void sendMail(List<Addressee> to, List<Addressee> cc, String subject, String body) {
+         log.info("Send mail to \'" + to + "\' cc \'" + cc + "\' subject \'" + subject + (log.isDebugEnabled() ? "\nbody=" + body : ""));
++        String state = "OK";
+         try {
+             val email = MailConfig.createHtmlEmail();
+             email.setSubject(subject);
+@@ -28,6 +34,9 @@
+             email.send();
+         } catch (EmailException e) {
+             log.error(e.getMessage(), e);
++            state = e.getMessage();
+         }
++        MAIL_CASE_DAO.insert(MailCase.of(to, cc, subject, state));
++        log.info("Sent with state: " + state);
+     }
+ }
+Index: services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServiceClient.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServiceClient.java	(date 1511830147000)
++++ services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServiceClient.java	(revision )
+@@ -15,6 +15,8 @@
+                 new QName("http://mail.service.masterjava.javaops.ru/", "MailServiceImplService"));
+ 
+         MailService mailService = service.getPort(MailService.class);
+-        mailService.sendMail(ImmutableList.of(new Addressee("masterjava@javaops.ru", null)), null, "Subject", "Body");
++        mailService.sendMail(ImmutableList.of(
++                new Addressee("masterjava@javaops.ru", null),
++                new Addressee("Bad Email <bad_email.ru>")), null, "Subject", "Body");
+     }
+ }
+Index: services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/Addressee.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/Addressee.java	(date 1511830147000)
++++ services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/Addressee.java	(revision )
+@@ -13,6 +13,18 @@
+     private String name;
+ 
+     public Addressee(String email) {
+-        this(email, null);
++        email = email.trim();
++        int idx = email.indexOf('<');
++        if (idx == -1) {
++            this.email = email;
++        } else {
++            this.name = email.substring(0, idx).trim();
++            this.email = email.substring(idx + 1, email.length() - 1).trim();
++        }
++    }
++
++    @Override
++    public String toString() {
++        return name == null ? email : name + " <" + email + '>';
+     }
+ }
+Index: services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServicePublisher.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServicePublisher.java	(date 1511830147000)
++++ services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServicePublisher.java	(revision )
+@@ -1,14 +1,13 @@
+ package ru.javaops.masterjava.service.mail;
+ 
++import ru.javaops.masterjava.persist.DBITestProvider;
++
+ import javax.xml.ws.Endpoint;
+ 
+-/**
+- * User: gkislin
+- * Date: 28.05.2014
+- */
+ public class MailServicePublisher {
+ 
+     public static void main(String[] args) {
++        DBITestProvider.initDBI();
+         Endpoint.publish("http://localhost:8080/mail/mailService", new MailServiceImpl());
+     }
+ }
+Index: services/mail-service/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/pom.xml	(date 1511830147000)
++++ services/mail-service/pom.xml	(revision )
+@@ -27,5 +27,17 @@
+             <artifactId>commons-email</artifactId>
+             <version>1.5</version>
+         </dependency>
++        <dependency>
++            <groupId>${project.groupId}</groupId>
++            <artifactId>persist</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>${project.groupId}</groupId>
++            <artifactId>persist</artifactId>
++            <version>${project.version}</version>
++            <type>test-jar</type>
++            <scope>test</scope>
++        </dependency>
+     </dependencies>
+ </project>
+\ No newline at end of file
+Index: sql/databaseChangeLog.sql
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- sql/databaseChangeLog.sql	(date 1511830147000)
++++ sql/databaseChangeLog.sql	(revision )
+@@ -32,3 +32,16 @@
+   group_id INTEGER NOT NULL REFERENCES groups (id),
+   CONSTRAINT users_group_idx UNIQUE (user_id, group_id)
+ );
++
++--changeset gkislin:3
++CREATE TABLE mail_hist (
++  id      SERIAL PRIMARY KEY,
++  list_to TEXT NULL,
++  list_cc TEXT NULL,
++  subject TEXT NULL,
++  state   TEXT NOT NULL,
++  datetime    TIMESTAMP NOT NULL
++);
++
++COMMENT ON TABLE mail_hist IS 'История отправки email';
++COMMENT ON COLUMN mail_hist.datetime IS 'Время отправки';
+\ No newline at end of file
+Index: persist/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/pom.xml	(date 1511830147000)
++++ persist/pom.xml	(revision )
+@@ -15,6 +15,25 @@
+     <version>1.0-SNAPSHOT</version>
+     <name>Persist</name>
+ 
++    <!--http://stackoverflow.com/a/25322753/548473-->
++    <!--http://maven.apache.org/guides/mini/guide-attached-tests.html-->
++    <build>
++        <plugins>
++            <plugin>
++                <groupId>org.apache.maven.plugins</groupId>
++                <artifactId>maven-jar-plugin</artifactId>
++                <version>3.0.2</version>
++                <executions>
++                    <execution>
++                        <goals>
++                            <goal>test-jar</goal>
++                        </goals>
++                    </execution>
++                </executions>
++            </plugin>
++        </plugins>
++    </build>
++
+     <dependencies>
+         <dependency>
+             <groupId>${project.groupId}</groupId>

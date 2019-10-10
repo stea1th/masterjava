@@ -1,0 +1,184 @@
+Index: services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailSender.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailSender.java	(revision a39e35395fd7774fa40ae7473c557f2a9e174efc)
++++ services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailSender.java	(revision )
+@@ -1,6 +1,9 @@
+ package ru.javaops.masterjava.service.mail;
+ 
++import com.google.common.collect.ImmutableMap;
+ import lombok.extern.slf4j.Slf4j;
++import lombok.val;
++import org.apache.commons.mail.EmailException;
+ 
+ import java.util.List;
+ 
+@@ -8,5 +11,23 @@
+ public class MailSender {
+     static void sendMail(List<Addressee> to, List<Addressee> cc, String subject, String body) {
+         log.info("Send mail to \'" + to + "\' cc \'" + cc + "\' subject \'" + subject + (log.isDebugEnabled() ? "\nbody=" + body : ""));
++        try {
++            val email = MailConfig.createHtmlEmail();
++            email.setSubject(subject);
++            email.setHtmlMsg(body);
++            for (Addressee addressee : to) {
++                email.addTo(addressee.getEmail(), addressee.getName());
++            }
++            for (Addressee addressee : cc) {
++                email.addCc(addressee.getEmail(), addressee.getName());
++            }
++
++            //  https://yandex.ru/blog/company/66296
++            email.setHeaders(ImmutableMap.of("List-Unsubscribe", "<mailto:masterjava@javaops.ru?subject=Unsubscribe&body=Unsubscribe>"));
++
++            email.send();
++        } catch (EmailException e) {
++            log.error(e.getMessage(), e);
++        }
+     }
+ }
+Index: services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailConfig.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailConfig.java	(revision )
++++ services/mail-service/src/main/java/ru/javaops/masterjava/service/mail/MailConfig.java	(revision )
+@@ -0,0 +1,67 @@
++package ru.javaops.masterjava.service.mail;
++
++import com.typesafe.config.Config;
++import org.apache.commons.mail.DefaultAuthenticator;
++import org.apache.commons.mail.Email;
++import org.apache.commons.mail.EmailException;
++import org.apache.commons.mail.HtmlEmail;
++import ru.javaops.masterjava.config.Configs;
++
++import javax.mail.Authenticator;
++import java.nio.charset.StandardCharsets;
++
++public class MailConfig {
++    private static final MailConfig INSTANCE =
++            new MailConfig(Configs.getConfig("mail.conf", "mail"));
++
++    final private String host;
++    final private int port;
++    final private boolean useSSL;
++    final private boolean useTLS;
++    final private boolean debug;
++    final private String username;
++    final private Authenticator auth;
++    final private String fromName;
++
++    private MailConfig(Config conf) {
++        host = conf.getString("host");
++        port = conf.getInt("port");
++        username = conf.getString("username");
++        auth = new DefaultAuthenticator(username, conf.getString("password"));
++        useSSL = conf.getBoolean("useSSL");
++        useTLS = conf.getBoolean("useTLS");
++        debug = conf.getBoolean("debug");
++        fromName = conf.getString("fromName");
++    }
++
++    public <T extends Email> T prepareEmail(T email) throws EmailException {
++        email.setFrom(username, fromName);
++        email.setHostName(host);
++        if (useSSL) {
++            email.setSslSmtpPort(String.valueOf(port));
++        } else {
++            email.setSmtpPort(port);
++        }
++        email.setSSLOnConnect(useSSL);
++        email.setStartTLSEnabled(useTLS);
++        email.setDebug(debug);
++        email.setAuthenticator(auth);
++        email.setCharset(StandardCharsets.UTF_8.name());
++        return email;
++    }
++
++    public static HtmlEmail createHtmlEmail() throws EmailException {
++        return INSTANCE.prepareEmail(new HtmlEmail());
++    }
++
++    @Override
++    public String toString() {
++        return "\nhost='" + host + '\'' +
++                "\nport=" + port +
++                "\nuseSSL=" + useSSL +
++                "\nuseTLS=" + useTLS +
++                "\ndebug=" + debug +
++                "\nusername='" + username + '\'' +
++                "\nfromName='" + fromName + '\'';
++    }
++}
+Index: services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/Addressee.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/Addressee.java	(revision a39e35395fd7774fa40ae7473c557f2a9e174efc)
++++ services/mail-api/src/main/java/ru/javaops/masterjava/service/mail/Addressee.java	(revision )
+@@ -3,15 +3,16 @@
+ import lombok.AllArgsConstructor;
+ import lombok.Data;
+ import lombok.NoArgsConstructor;
++import lombok.NonNull;
+ 
+-/**
+- * gkislin
+- * 15.11.2016
+- */
+ @Data
+ @AllArgsConstructor
+ @NoArgsConstructor
+ public class Addressee {
+-    private String email;
++    private @NonNull String email;
+     private String name;
++
++    public Addressee(String email) {
++        this(email, null);
++    }
+ }
+Index: services/mail-service/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/pom.xml	(revision a39e35395fd7774fa40ae7473c557f2a9e174efc)
++++ services/mail-service/pom.xml	(revision )
+@@ -22,5 +22,10 @@
+             <artifactId>mail-api</artifactId>
+             <version>${project.version}</version>
+         </dependency>
++        <dependency>
++            <groupId>org.apache.commons</groupId>
++            <artifactId>commons-email</artifactId>
++            <version>1.5</version>
++        </dependency>
+     </dependencies>
+ </project>
+\ No newline at end of file
+Index: services/mail-service/src/main/resources/mail.conf
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/main/resources/mail.conf	(revision )
++++ services/mail-service/src/main/resources/mail.conf	(revision )
+@@ -0,0 +1,12 @@
++mail {
++  host: smtp.yandex.ru
++  port: 465
++  username: "user@yandex.ru"
++  password: password
++  useSSL: true
++  useTLS: false
++  debug: true
++  fromName: MasterJava
++}
++
++include required(file("/apps/masterjava/config/mail.conf"))

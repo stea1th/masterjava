@@ -1,0 +1,66 @@
+Index: services/mail-service/src/main/webapp/WEB-INF/sun-jaxws.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/main/webapp/WEB-INF/sun-jaxws.xml	(revision )
++++ services/mail-service/src/main/webapp/WEB-INF/sun-jaxws.xml	(revision )
+@@ -0,0 +1,5 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<endpoints xmlns="http://java.sun.com/xml/ns/jax-ws/ri/runtime" version="2.0">
++    <endpoint name="MailService" implementation="ru.javaops.masterjava.service.mail.MailServiceImpl"
++              url-pattern="/mailService"/>
++</endpoints>
+\ No newline at end of file
+Index: services/mail-service/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/pom.xml	(date 1511834186000)
++++ services/mail-service/pom.xml	(revision )
+@@ -39,5 +39,43 @@
+             <type>test-jar</type>
+             <scope>test</scope>
+         </dependency>
++        <dependency>
++            <groupId>com.sun.xml.ws</groupId>
++            <artifactId>jaxws-rt</artifactId>
++            <version>2.3.0</version>
++            <exclusions>
++                <exclusion>
++                    <groupId>org.jvnet.mimepull</groupId>
++                    <artifactId>mimepull</artifactId>
++                </exclusion>
++                <exclusion>
++                    <groupId>javax.xml.bind</groupId>
++                    <artifactId>jaxb-api</artifactId>
++                </exclusion>
++                <exclusion>
++                    <groupId>javax.annotation</groupId>
++                    <artifactId>javax.annotation-api</artifactId>
++                </exclusion>
++                <exclusion>
++                    <groupId>org.jvnet.staxex</groupId>
++                    <artifactId>stax-ex</artifactId>
++                </exclusion>
++                <exclusion>
++                    <groupId>javax.xml.soap</groupId>
++                    <artifactId>javax.xml.soap-api</artifactId>
++                </exclusion>
++            </exclusions>
++        </dependency>
++        <dependency>
++            <groupId>org.jvnet.staxex</groupId>
++            <artifactId>stax-ex</artifactId>
++            <version>1.7.8</version>
++            <exclusions>
++                <exclusion>
++                    <groupId>javax.activation</groupId>
++                    <artifactId>activation</artifactId>
++                </exclusion>
++            </exclusions>
++        </dependency>
+     </dependencies>
+ </project>
+\ No newline at end of file

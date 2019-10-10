@@ -1,0 +1,155 @@
+Index: web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(date 1511830826000)
++++ web/upload/src/main/java/ru/javaops/masterjava/upload/UserProcessor.java	(revision )
+@@ -1,12 +1,16 @@
+ package ru.javaops.masterjava.upload;
+ 
++import com.google.common.base.Splitter;
+ import lombok.extern.slf4j.Slf4j;
+ import lombok.val;
++import one.util.streamex.StreamEx;
+ import ru.javaops.masterjava.persist.DBIProvider;
+ import ru.javaops.masterjava.persist.dao.UserDao;
++import ru.javaops.masterjava.persist.dao.UserGroupDao;
+ import ru.javaops.masterjava.persist.model.City;
+ import ru.javaops.masterjava.persist.model.Group;
+ import ru.javaops.masterjava.persist.model.User;
++import ru.javaops.masterjava.persist.model.UserGroup;
+ import ru.javaops.masterjava.persist.model.type.UserFlag;
+ import ru.javaops.masterjava.upload.PayloadProcessor.FailedEmails;
+ import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
+@@ -14,10 +18,7 @@
+ import javax.xml.bind.JAXBException;
+ import javax.xml.stream.XMLStreamException;
+ import javax.xml.stream.events.XMLEvent;
+-import java.util.ArrayList;
+-import java.util.LinkedHashMap;
+-import java.util.List;
+-import java.util.Map;
++import java.util.*;
+ import java.util.concurrent.ExecutionException;
+ import java.util.concurrent.ExecutorService;
+ import java.util.concurrent.Executors;
+@@ -43,27 +44,41 @@
+ 
+         int id = userDao.getSeqAndSkip(chunkSize);
+         List<User> chunk = new ArrayList<>(chunkSize);
++        List<UserGroup> chunkUserGroups = new ArrayList<>(chunkSize);
+         val unmarshaller = jaxbParser.createUnmarshaller();
+         List<FailedEmails> failed = new ArrayList<>();
+ 
+         while (processor.doUntil(XMLEvent.START_ELEMENT, "User")) {
+-            String cityRef = processor.getAttribute("city");  // unmarshal doesn't get city ref
++            // unmarshal doesn't get refs
++            val cityRef = processor.getAttribute("city");
++            val groupRefs = processor.getAttribute("groupRefs");
+             ru.javaops.masterjava.xml.schema.User xmlUser = unmarshaller.unmarshal(processor.getReader(), ru.javaops.masterjava.xml.schema.User.class);
++            String email = xmlUser.getEmail();
+             if (cities.get(cityRef) == null) {
+-                failed.add(new FailedEmails(xmlUser.getEmail(), "City '" + cityRef + "' is not present in DB"));
++                failed.add(new FailedEmails(email, "City '" + cityRef + "' is not present in DB"));
+             } else {
+-                final User user = new User(id++, xmlUser.getValue(), xmlUser.getEmail(), UserFlag.valueOf(xmlUser.getFlag().value()), cityRef);
+-                chunk.add(user);
+-                if (chunk.size() == chunkSize) {
+-                    addChunkFutures(chunkFutures, chunk);
+-                    chunk = new ArrayList<>(chunkSize);
+-                    id = userDao.getSeqAndSkip(chunkSize);
++                List<String> groupNames = (groupRefs == null) ?
++                        Collections.emptyList() :
++                        Splitter.on(' ').splitToList(groupRefs);
++                if (!groups.keySet().containsAll(groupNames)) {
++                    failed.add(new FailedEmails(email, "One of group from '" + groupRefs + "' is not present in DB"));
++                } else {
++                    final User user = new User(id++, xmlUser.getValue(), email, UserFlag.valueOf(xmlUser.getFlag().value()), cityRef);
++                    chunk.add(user);
++                    List<UserGroup> userGroups = StreamEx.of(groupNames).map(name -> new UserGroup(user.getId(), groups.get(name).getId())).toList();
++                    chunkUserGroups.addAll(userGroups);
++                    if (chunk.size() == chunkSize) {
++                        addChunkFutures(chunkFutures, chunk, chunkUserGroups);
++                        chunk = new ArrayList<>(chunkSize);
++                        chunkUserGroups = new ArrayList<>(chunkSize);
++                        id = userDao.getSeqAndSkip(chunkSize);
++                    }
+                 }
+             }
+         }
+ 
+         if (!chunk.isEmpty()) {
+-            addChunkFutures(chunkFutures, chunk);
++            addChunkFutures(chunkFutures, chunk, chunkUserGroups);
+         }
+ 
+         List<String> allAlreadyPresents = new ArrayList<>();
+@@ -83,9 +98,28 @@
+         return failed;
+     }
+ 
+-    private void addChunkFutures(Map<String, Future<List<String>>> chunkFutures, List<User> chunk) {
++    private void addChunkFutures(Map<String, Future<List<String>>> chunkFutures, List<User> chunk, List<UserGroup> chunkUserGroups) {
+         String emailRange = String.format("[%s-%s]", chunk.get(0).getEmail(), chunk.get(chunk.size() - 1).getEmail());
+-        Future<List<String>> future = executorService.submit(() -> userDao.insertAndGetConflictEmails(chunk));
++        Future<List<String>> future = executorService.submit(() -> {
++            //    https://www.programcreek.com/java-api-examples/index.php?api=org.skife.jdbi.v2.TransactionCallback
++            List<String> alreadyPresentsEmails = DBIProvider.getDBI().inTransaction((handle, status) -> {
++                UserDao tUserDao = handle.attach(UserDao.class);
++                UserGroupDao tUserGroupDao = handle.attach(UserGroupDao.class);
++                List<User> alreadyPresents = tUserDao.insertAndGetConflictEmails(chunk);
++                Set<Integer> alreadyPresentsIds = StreamEx.of(alreadyPresents).map(User::getId).toSet();
++                tUserGroupDao.insertBatch(
++                        StreamEx.of(chunkUserGroups)
++                                .filter(ug -> !alreadyPresentsIds.contains(ug.getUserId()))
++                                .toList()
++                );
++                return StreamEx.of(alreadyPresents).map(User::getEmail).toList();
++            });
++
++            // let gc clear chunk after insert
++            chunk.clear();
++            chunkUserGroups.clear();
++            return alreadyPresentsEmails;
++        });
+         chunkFutures.put(emailRange, future);
+         log.info("Submit chunk: " + emailRange);
+     }
+Index: web/upload/src/test/resources/payload_bad.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- web/upload/src/test/resources/payload_bad.xml	(date 1511830826000)
++++ web/upload/src/test/resources/payload_bad.xml	(revision )
+@@ -21,7 +21,7 @@
+         <City id="mnsk">Минск</City>
+     </Cities>
+     <Users>
+-        <User flag="active" city="kiv" email="gmail@gmail.com" groupRefs="topjava07 masterjava01">Full Name</User>
++        <User flag="active" city="kiv" email="gmail@gmail.com" groupRefs="topjava07 masterjava01 bad_group">Full Name</User>
+         <User flag="superuser" city="spb" email="admin@javaops.ru" groupRefs="topjava07 topjava08 masterjava01">Admin</User>
+         <User flag="deleted" city="bad1" email="deleted@yandex.ru">Deleted</User>
+         <User flag="active" city="mow" email="user1@gmail.com" groupRefs="masterjava01 topjava06">User1</User>
+Index: persist/src/main/java/ru/javaops/masterjava/persist/dao/UserDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/src/main/java/ru/javaops/masterjava/persist/dao/UserDao.java	(date 1511830826000)
++++ persist/src/main/java/ru/javaops/masterjava/persist/dao/UserDao.java	(revision )
+@@ -55,11 +55,11 @@
+     public abstract int[] insertBatch(@BindBean List<User> users, @BatchChunkSize int chunkSize);
+ 
+ 
+-    public List<String> insertAndGetConflictEmails(List<User> users) {
++    public List<User> insertAndGetConflictEmails(List<User> users) {
+         int[] result = insertBatch(users, users.size());
+         return IntStreamEx.range(0, users.size())
+                 .filter(i -> result[i] == 0)
+-                .mapToObj(index -> users.get(index).getEmail())
++                .mapToObj(users::get)
+                 .toList();
+     }
+ }
