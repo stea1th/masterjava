@@ -2,6 +2,7 @@ package ru.javaops.masterjava.service.mail;
 
 import com.google.common.io.Resources;
 import lombok.extern.slf4j.Slf4j;
+import ru.javaops.masterjava.config.Configs;
 import ru.javaops.masterjava.web.WsClient;
 
 import javax.xml.namespace.QName;
@@ -12,7 +13,7 @@ public class MailWSClient {
     private static final WsClient<MailService> WS_CLIENT;
 
     static {
-        WS_CLIENT = new WsClient<>(Resources.getResource("wsdl/mailService.wsdl"),
+        WS_CLIENT = new WsClient<>(Resources.getResource(Configs.getURL("wsdl/mailService.wsdl")),
                 new QName("http://mail.javaops.ru/", "MailServiceImplService"),
                 MailService.class);
 
