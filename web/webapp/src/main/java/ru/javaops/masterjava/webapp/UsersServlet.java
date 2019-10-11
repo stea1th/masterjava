@@ -24,4 +24,9 @@ public class UsersServlet extends HttpServlet {
                 ImmutableMap.of("users", userDao.getWithLimit(20)));
         engine.process("users", webContext, resp.getWriter());
     }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        System.out.println(req.getParameter("body"));
+    }
 }

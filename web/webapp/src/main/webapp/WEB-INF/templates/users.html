@@ -2,26 +2,78 @@
 <head>
     <meta charset="UTF-8">
     <title>Users</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+            integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+            integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+            integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+            crossorigin="anonymous"></script>
 </head>
 <body>
-<table border="1" cellpadding="8" cellspacing="0">
-    <thead>
-    <tr>
-        <th>#</th>
-        <th>Full Name</th>
-        <th>Email</th>
-        <th>Flag</th>
-    </tr>
-    </thead>
-    <tbody>
-    <!--/*@thymesVar id="users" type="java.util.List<ru.javaops.masterjava.persist.model.User>"*/-->
-    <tr th:each="user,iter: ${users}">
-        <td th:text="${iter.count}"></td>
-        <td th:text="${user.fullName}"></td>
-        <td th:utext="${user.email}"></td>
-        <td th:text="${user.flag}"></td>
-    </tr>
-    </tbody>
-</table>
+<div class="jumbotron">
+    <div class="container">
+        <form method="post" action="/user">
+            <div class="row">
+                <div class="col-sm">
+                    <table border="1" cellpadding="8" cellspacing="0">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Flag</th>
+                            <th>Send</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <!--/*@thymesVar id="users" type="java.util.List<ru.javaops.masterjava.persist.model.User>"*/-->
+                        <tr th:each="user,iter: ${users}">
+                            <td th:text="${iter.count}"></td>
+                            <td th:text="${user.fullName}"></td>
+                            <td th:utext="${user.email}"></td>
+                            <td th:text="${user.flag}"></td>
+                            <td><input type="checkbox" id="check-send" name="check-send"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-sm">
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon1">To</span>
+                        </div>
+                        <input type="text" class="form-control" placeholder="email to" aria-label="to"
+                               aria-describedby="basic-addon1" name="to-text">
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon2">Subject</span>
+                        </div>
+                        <input type="text" class="form-control" placeholder="email to" aria-label="to"
+                               aria-describedby="basic-addon2" name="subject-text">
+                    </div>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">Body</span>
+                        </div>
+                        <textarea class="form-control" rows="5" aria-label="With textarea" name="body"></textarea>
+                    </div>
+                    <br>
+                    <div class="mb-3">
+                        <input class="btn btn-primary" type="submit" value="Submit">
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+
 </body>
 </html>
