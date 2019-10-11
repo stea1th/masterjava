@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions name="MailServiceImplService" targetNamespace="http://mail.javaops.ru/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://mail.javaops.ru/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
+  <wsdl:types>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://mail.javaops.ru/" elementFormDefault="unqualified" targetNamespace="http://mail.javaops.ru/" version="1.0">
+<xs:element name="sendMail" type="tns:sendMail"/>
+<xs:element name="sendMailResponse" type="tns:sendMailResponse"/>
+<xs:complexType name="sendMail">
+    <xs:sequence>
+      <xs:element maxOccurs="unbounded" minOccurs="0" name="to" type="tns:addressee"/>
+      <xs:element maxOccurs="unbounded" minOccurs="0" name="cc" type="tns:addressee"/>
+      <xs:element minOccurs="0" name="subject" type="xs:string"/>
+      <xs:element minOccurs="0" name="body" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+<xs:complexType name="addressee">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="email" type="xs:string"/>
+      <xs:element minOccurs="0" name="name" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+<xs:complexType name="sendMailResponse">
+    <xs:sequence/>
+  </xs:complexType>
+</xs:schema>
+  </wsdl:types>
+  <wsdl:message name="sendMail">
+    <wsdl:part name="parameters" element="tns:sendMail">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="sendMailResponse">
+    <wsdl:part name="parameters" element="tns:sendMailResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:portType name="MailService">
+    <wsdl:operation name="sendMail">
+      <wsdl:input name="sendMail" message="tns:sendMail">
+    </wsdl:input>
+      <wsdl:output name="sendMailResponse" message="tns:sendMailResponse">
+    </wsdl:output>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="MailServiceImplServiceSoapBinding" type="tns:MailService">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="sendMail">
+      <soap:operation soapAction="" style="document"/>
+      <wsdl:input name="sendMail">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="sendMailResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="MailServiceImplService">
+    <wsdl:port name="MailServiceImplPort" binding="tns:MailServiceImplServiceSoapBinding">
+      <soap:address location="http://localhost:9090/MailServiceImplPort"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
