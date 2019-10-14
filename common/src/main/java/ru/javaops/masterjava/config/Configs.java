@@ -13,7 +13,7 @@ import java.net.URL;
  */
 public class Configs {
 
-    private static final String CONFIG_PATH = "/apps/masterjava/config/";
+    private static final Config APP_CONFIG = getConfig("app.conf", "app");
 
     public static Config getConfig(String resource) {
         return ConfigFactory.parseResources(resource).resolve();
@@ -24,10 +24,10 @@ public class Configs {
     }
 
     public static File getConfigFile(String fileName) {
-        return new File(CONFIG_PATH + fileName);
+        return new File(APP_CONFIG.getString("configDir") + fileName);
     }
 
     public static String getURL(String fileName)  {
-       return CONFIG_PATH + fileName;
+       return APP_CONFIG.getString("configDir") + fileName;
     }
 }

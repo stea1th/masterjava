@@ -26,5 +26,11 @@
             <artifactId>persist</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>ru.javaops</groupId>
+            <artifactId>mail-api</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 </project>

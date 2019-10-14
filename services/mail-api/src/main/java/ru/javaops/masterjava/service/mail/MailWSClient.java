@@ -13,7 +13,7 @@ public class MailWSClient {
     private static final WsClient<MailService> WS_CLIENT;
 
     static {
-        WS_CLIENT = new WsClient<>(Resources.getResource(Configs.getURL("wsdl/mailService.wsdl")),
+        WS_CLIENT = new WsClient<>(Resources.getResource(Configs.getURL("MailService.wsdl")),
                 new QName("http://mail.javaops.ru/", "MailServiceImplService"),
                 MailService.class);
 
@@ -24,5 +24,10 @@ public class MailWSClient {
     public static void sendToGroup(final Set<Addressee> to, final Set<Addressee> cc, final String subject, final String body) {
         log.info("Send mail to '" + to + "' cc '" + cc + "' subject '" + subject + (log.isDebugEnabled() ? "\nbody=" + body : ""));
         WS_CLIENT.getPort().sendToGroup(to, cc, subject, body);
+    }
+
+    public static void sendBulk(final Set<Addressee> to, final String subject, final String body) {
+        log.info("Send mail to '" + to + "' subject '" + subject + (log.isDebugEnabled() ? "\nbody=" + body : ""));
+        WS_CLIENT.getPort().sendBulk(to, subject, body);
     }
 }

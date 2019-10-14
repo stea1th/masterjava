@@ -37,7 +37,7 @@
                             <td th:text="${user.fullName}"></td>
                             <td th:utext="${user.email}"></td>
                             <td th:text="${user.flag}"></td>
-                            <td><input type="checkbox" id="check-send" name="check-send"></td>
+                            <td><input type="checkbox" id="cc-id" name="cc-id" th:value="${user.id}"></td>
                         </tr>
                         </tbody>
                     </table>
@@ -47,21 +47,21 @@
                         <div class="input-group-prepend">
                             <span class="input-group-text" id="basic-addon1">To</span>
                         </div>
-                        <input type="text" class="form-control" placeholder="email to" aria-label="to"
-                               aria-describedby="basic-addon1" name="to-text">
+                        <input type="email" class="form-control" placeholder="email to" aria-label="to"
+                               aria-describedby="basic-addon1" name="to-email">
                     </div>
                     <div class="input-group mb-3">
                         <div class="input-group-prepend">
                             <span class="input-group-text" id="basic-addon2">Subject</span>
                         </div>
-                        <input type="text" class="form-control" placeholder="email to" aria-label="to"
+                        <input type="text" class="form-control" placeholder="subject" aria-label="to"
                                aria-describedby="basic-addon2" name="subject-text">
                     </div>
                     <div class="input-group">
                         <div class="input-group-prepend">
                             <span class="input-group-text">Body</span>
                         </div>
-                        <textarea class="form-control" rows="5" aria-label="With textarea" name="body"></textarea>
+                        <textarea class="form-control" rows="5" aria-label="With textarea" name="body" placeholder="email text"></textarea>
                     </div>
                     <br>
                     <div class="mb-3">

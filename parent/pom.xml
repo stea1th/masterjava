@@ -61,6 +61,17 @@
                 </executions>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>${masterjava.config}</directory>
+                <excludes>
+                    <exclude>logback-test.xml</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
 
         <testResources>
             <testResource>

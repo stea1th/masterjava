@@ -48,6 +48,9 @@ public abstract class UserDao implements AbstractDao {
     @Override
     public abstract void clean();
 
+    @SqlQuery("SELECT * FROM users WHERE id = :it")
+    public abstract User get(@Bind int id);
+
     //    https://habrahabr.ru/post/264281/
     @SqlBatch("INSERT INTO users (id, full_name, email, flag, city_ref) VALUES (:id, :fullName, :email, CAST(:flag AS USER_FLAG), :cityRef)" +
             "ON CONFLICT DO NOTHING")
