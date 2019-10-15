@@ -1,0 +1,153 @@
+Index: services/mail-service/src/main/webapp/WEB-INF/wsdl/mailService.wsdl
+===================================================================
+--- services/mail-service/src/main/webapp/WEB-INF/wsdl/mailService.wsdl	(revision 6558d5a1a1c95d013ef0bef6dbb50b230786ee56)
++++ services/mail-service/src/main/webapp/WEB-INF/wsdl/mailService.wsdl	(revision 6558d5a1a1c95d013ef0bef6dbb50b230786ee56)
+@@ -1,65 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<definitions xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata"
+-             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+-             xmlns:tns="http://mail.javaops.ru/"
+-             xmlns:xs="http://www.w3.org/2001/XMLSchema"
+-             xmlns="http://schemas.xmlsoap.org/wsdl/"
+-             targetNamespace="http://mail.javaops.ru/"
+-             name="MailServiceImplService">
+-    <types>
+-        <xs:schema targetNamespace="http://mail.javaops.ru/">
+-            <xs:element name="sendMail" type="tns:sendMail"/>
+-            <xs:element name="sendMailResponse" type="tns:sendMailResponse"/>
+-
+-            <xs:complexType name="sendMail">
+-                <xs:sequence>
+-                    <xs:element name="to" type="tns:addressee" minOccurs="0" maxOccurs="unbounded"/>
+-                    <xs:element name="cc" type="tns:addressee" minOccurs="0" maxOccurs="unbounded"/>
+-                    <xs:element name="subject" type="xs:string" minOccurs="0"/>
+-                    <xs:element name="body" type="xs:string" minOccurs="1"/>
+-                </xs:sequence>
+-            </xs:complexType>
+-
+-            <xs:complexType name="addressee">
+-                <xs:simpleContent>
+-                    <xs:extension base="xs:string">
+-                        <xs:attribute type="xs:string" name="email"/>
+-                    </xs:extension>
+-                </xs:simpleContent>
+-            </xs:complexType>
+-
+-            <xs:complexType name="sendMailResponse">
+-                <xs:sequence/>
+-            </xs:complexType>
+-        </xs:schema>
+-    </types>
+-    <message name="sendMail">
+-        <part name="parameters" element="tns:sendMail"/>
+-    </message>
+-    <message name="sendMailResponse">
+-        <part name="parameters" element="tns:sendMailResponse"/>
+-    </message>
+-    <portType name="MailService">
+-        <operation name="sendMail">
+-            <input wsam:Action="http://mail.service.masterjava.javaops.ru/MailService/sendMailRequest" message="tns:sendMail"/>
+-            <output wsam:Action="http://mail.service.masterjava.javaops.ru/MailService/sendMailResponse" message="tns:sendMailResponse"/>
+-        </operation>
+-    </portType>
+-    <binding name="MailServiceImplPortBinding" type="tns:MailService">
+-        <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+-        <operation name="sendMail">
+-            <soap:operation soapAction=""/>
+-            <input>
+-                <soap:body use="literal"/>
+-            </input>
+-            <output>
+-                <soap:body use="literal"/>
+-            </output>
+-        </operation>
+-    </binding>
+-    <service name="MailServiceImplService">
+-        <port name="MailServiceImplPort" binding="tns:MailServiceImplPortBinding">
+-            <soap:address location="http://localhost:8080/mail/mailService"/>
+-        </port>
+-    </service>
+-</definitions>
+\ No newline at end of file
+Index: services/mail-api/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-api/pom.xml	(revision 6558d5a1a1c95d013ef0bef6dbb50b230786ee56)
++++ services/mail-api/pom.xml	(revision )
+@@ -15,6 +15,17 @@
+     <version>1.0-SNAPSHOT</version>
+     <name>Mail API</name>
+ 
++    <build>
++        <resources>
++            <resource>
++                <directory>${masterjava.config}</directory>
++                <includes>
++                    <include>wsdl/mailService.wsdl</include>
++                </includes>
++            </resource>
++        </resources>
++    </build>
++
+     <dependencies>
+         <dependency>
+             <groupId>${project.groupId}</groupId>
+Index: services/mail-api/src/test/resources/wsdl/mailService.wsdl
+===================================================================
+--- services/mail-api/src/test/resources/wsdl/mailService.wsdl	(revision 6558d5a1a1c95d013ef0bef6dbb50b230786ee56)
++++ config_templates/wsdl/mailService.wsdl	(revision )
+@@ -1,0 +1,0 @@
+Index: services/mail-service/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/pom.xml	(revision 6558d5a1a1c95d013ef0bef6dbb50b230786ee56)
++++ services/mail-service/pom.xml	(revision )
+@@ -16,6 +16,29 @@
+     <packaging>war</packaging>
+     <name>Mail Service</name>
+ 
++    <build>
++        <finalName>mail</finalName>
++        <plugins>
++            <plugin>
++                <groupId>org.apache.maven.plugins</groupId>
++                <artifactId>maven-war-plugin</artifactId>
++                <version>3.2.0</version>
++                <configuration>
++                    <failOnMissingWebXml>false</failOnMissingWebXml>
++                    <webResources>
++                        <resource>
++                            <directory>${masterjava.config}</directory>
++                            <includes>
++                                <include>wsdl/mailService.wsdl</include>
++                            </includes>
++                            <targetPath>WEB-INF</targetPath>
++                        </resource>
++                    </webResources>
++                </configuration>
++            </plugin>
++        </plugins>
++    </build>
++
+     <dependencies>
+         <dependency>
+             <groupId>${project.groupId}</groupId>
+Index: parent/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- parent/pom.xml	(revision 6558d5a1a1c95d013ef0bef6dbb50b230786ee56)
++++ parent/pom.xml	(revision )
+@@ -18,6 +18,7 @@
+         <logback.version>1.2.3</logback.version>
+         <slf4j.version>1.7.25</slf4j.version>
+ 
++        <!-- Can be overriten in ${MAVEN_HOME}\conf\settings.xml-->
+         <masterjava.config>/apps/masterjava/config/</masterjava.config>
+         <dependency.locations.enabled>false</dependency.locations.enabled>
+     </properties>

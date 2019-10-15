@@ -1,0 +1,156 @@
+Index: config_templates/app.conf
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- config_templates/app.conf	(revision )
++++ config_templates/app.conf	(revision )
+@@ -0,0 +1,6 @@
++app {
++  groupId = ${project.groupId}
++  projectName = ${project.name}
++  version = ${project.version}
++  configDir = "${masterjava.config}"
++}
+\ No newline at end of file
+Index: config_templates/version.html
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- config_templates/version.html	(revision )
++++ config_templates/version.html	(revision )
+@@ -0,0 +1,11 @@
++<html>
++<head>
++    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
++    <title>${project.name}</title>
++</head>
++<body>
++${project.groupId}:${project.name}:${project.version}<br/>
++configDir=${masterjava.config}<br/>
++<a href="https://github.com/JavaWebinar/masterjava">Многопоточность. Maven. XML. Веб сервисы.</a>
++</body>
++</html>
+Index: common/src/main/java/ru/javaops/masterjava/config/Configs.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- common/src/main/java/ru/javaops/masterjava/config/Configs.java	(date 1492825787000)
++++ common/src/main/java/ru/javaops/masterjava/config/Configs.java	(revision )
+@@ -3,10 +3,8 @@
+ import com.typesafe.config.Config;
+ import com.typesafe.config.ConfigFactory;
+ 
+-/**
+- * gkislin
+- * 01.11.2016
+- */
++import java.io.File;
++
+ public class Configs {
+ 
+     public static Config getConfig(String resource) {
+@@ -16,4 +14,12 @@
+     public static Config getConfig(String resource, String domain) {
+         return getConfig(resource).getConfig(domain);
+     }
++
++    public static File getConfigFile(String path) {
++        return new File(AppConfig.APP_CONFIG.getString("configDir"), path);
++    }
++
++    private static class AppConfig {
++        private static final Config APP_CONFIG = getConfig("app.conf", "app");
++    }
+ }
+Index: parent-web/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- parent-web/pom.xml	(date 1492825787000)
++++ parent-web/pom.xml	(revision )
+@@ -24,6 +24,18 @@
+                 <version>3.0.0</version>
+                 <configuration>
+                     <failOnMissingWebXml>false</failOnMissingWebXml>
++                    <webResources>
++                        <resource>
++                            <directory>src/main/webapp</directory>
++                        </resource>
++                        <resource>
++                            <directory>${masterjava.config}</directory>
++                            <includes>
++                                <include>version.html</include>
++                            </includes>
++                            <filtering>true</filtering>
++                        </resource>
++                    </webResources>
+                 </configuration>
+             </plugin>
+ 
+@@ -75,6 +87,7 @@
+                 <filtering>true</filtering>
+                 <includes>
+                     <include>logback.xml</include>
++                    <include>app.conf</include>
+                 </includes>
+             </resource>
+             <resource>
+Index: services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServicePublisher.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServicePublisher.java	(date 1492825787000)
++++ services/mail-service/src/test/java/ru/javaops/masterjava/service/mail/MailServicePublisher.java	(revision )
+@@ -1,12 +1,12 @@
+ package ru.javaops.masterjava.service.mail;
+ 
+ import com.google.common.collect.ImmutableList;
++import ru.javaops.masterjava.config.Configs;
+ import ru.javaops.masterjava.persist.DBITestProvider;
+ 
+ import javax.xml.transform.Source;
+ import javax.xml.transform.stream.StreamSource;
+ import javax.xml.ws.Endpoint;
+-import java.io.File;
+ import java.util.List;
+ 
+ public class MailServicePublisher {
+@@ -16,8 +16,7 @@
+ 
+         Endpoint endpoint = Endpoint.create(new MailServiceImpl());
+         List<Source> metadata = ImmutableList.of(
+-                new StreamSource(
+-                        new File("services/mail-service/src/main/webapp/WEB-INF/wsdl/mailService.wsdl")));
++                new StreamSource(Configs.getConfigFile("wsdl/mailService.wsdl")));
+ 
+         endpoint.setMetadata(metadata);
+         endpoint.publish("http://localhost:8080/mail/mailService");
+Index: services/mail-service/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/pom.xml	(date 1492825787000)
++++ services/mail-service/pom.xml	(revision )
+@@ -27,6 +27,16 @@
+                     <failOnMissingWebXml>false</failOnMissingWebXml>
+                     <webResources>
+                         <resource>
++                            <directory>src/main/webapp</directory>
++                        </resource>
++                        <resource>
++                            <directory>${masterjava.config}</directory>
++                            <includes>
++                                <include>version.html</include>
++                            </includes>
++                            <filtering>true</filtering>
++                        </resource>
++                        <resource>
+                             <directory>${masterjava.config}</directory>
+                             <includes>
+                                 <include>wsdl/mailService.wsdl</include>

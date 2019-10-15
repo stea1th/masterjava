@@ -1,0 +1,95 @@
+Index: services/mail-service/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- services/mail-service/pom.xml	(revision b89d690c6de538e3a6aeb5c6dee3e44ccc69f793)
++++ services/mail-service/pom.xml	(date 1512925281399)
+@@ -21,31 +21,24 @@
+         <plugins>
+             <plugin>
+                 <groupId>org.apache.maven.plugins</groupId>
+-                <artifactId>maven-war-plugin</artifactId>
+-                <version>3.2.0</version>
+-                <configuration>
+-                    <failOnMissingWebXml>false</failOnMissingWebXml>
+-                    <webResources>
+-                        <resource>
+-                            <directory>src/main/webapp</directory>
+-                        </resource>
+-                        <resource>
+-                            <directory>${masterjava.config}</directory>
+-                            <includes>
+-                                <include>version.html</include>
+-                            </includes>
+-                            <filtering>true</filtering>
+-                        </resource>
+-                        <resource>
+-                            <directory>${masterjava.config}</directory>
+-                            <includes>
+-                                <include>wsdl/mailService.wsdl</include>
+-                                <include>wsdl/common.xsd</include>
+-                            </includes>
+-                            <targetPath>WEB-INF</targetPath>
+-                        </resource>
+-                    </webResources>
+-                </configuration>
++                <artifactId>maven-antrun-plugin</artifactId>
++                <version>1.8</version>
++                <executions>
++                    <execution>
++                        <phase>prepare-package</phase>
++                        <goals>
++                            <goal>run</goal>
++                        </goals>
++                        <configuration>
++                            <target>
++                                <copy todir="target/mail/WEB-INF/wsdl">
++                                    <!--https://ant.apache.org/manual/Types/selectors.html-->
++                                    <fileset dir="${masterjava.config}/wsdl" includes="mailService.wsdl,common.xsd"/>
++                                </copy>
++                            </target>
++                        </configuration>
++                    </execution>
++                </executions>
+             </plugin>
+         </plugins>
+     </build>
+Index: persist/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- persist/pom.xml	(revision b89d690c6de538e3a6aeb5c6dee3e44ccc69f793)
++++ persist/pom.xml	(date 1512925462323)
+@@ -31,6 +31,30 @@
+                     </execution>
+                 </executions>
+             </plugin>
++
++            <!--http://www.liquibase.org/documentation/maven/            -->
++            <plugin>
++                <groupId>org.liquibase</groupId>
++                <artifactId>liquibase-maven-plugin</artifactId>
++                <version>3.5.3</version>
++                <configuration>
++                    <changeLogFile>../sql/databaseChangeLog.sql</changeLogFile>
++                    <driver>org.postgresql.Driver</driver>
++                    <url>jdbc:postgresql://localhost:5432/masterjava</url>
++                    <username>user</username>
++                    <password>password</password>
++                    <!--<propertyFile>${masterjava.config}/liquibase.properties</propertyFile>-->
++                    <!--<propertyFileWillOverride>true</propertyFileWillOverride>-->
++                </configuration>
++                <executions>
++                    <execution>
++                        <phase>process-resources</phase>
++                        <goals>
++                            <goal>update</goal>
++                        </goals>
++                    </execution>
++                </executions>
++            </plugin>
+         </plugins>
+     </build>
+ 
