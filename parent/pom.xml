@@ -19,7 +19,7 @@
         <slf4j.version>1.7.25</slf4j.version>
 
         <!-- Can be overriten in ${MAVEN_HOME}\conf\settings.xml-->
-        <masterjava.config>/apps/masterjava/config/</masterjava.config>
+        <masterjava.config>\apps\masterjava\config\</masterjava.config>
         <dependency.locations.enabled>false</dependency.locations.enabled>
     </properties>
 
